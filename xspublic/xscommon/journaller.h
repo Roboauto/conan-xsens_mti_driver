@@ -40,18 +40,17 @@
 #include <iomanip>
 #endif
 #include <xstypes/xsstring.h>
+#include <memory>
 
 class JournalFile;
-
+class JournalThreader;
 class Journaller
 {
 public:
-	Journaller(const char* pathfile, bool purge = true, JournalLogLevel initialLogLevel = JLL_Alert);
 	Journaller(const XsString& pathfile, bool purge = true, JournalLogLevel initialLogLevel = JLL_Alert);
-	Journaller(Journaller const& attachTo);
-	virtual ~Journaller();
+	~Journaller();
 
-	virtual void log(JournalLogLevel level, const std::string& msg);
+	void log(JournalLogLevel level, const std::string& msg);
 	void writeCallstack(JournalLogLevel level);
 
 	void setLogLevel(JournalLogLevel level, bool writeLogLine = true);
@@ -75,7 +74,7 @@ public:
 	//! \returns The flush level
 	inline JournalLogLevel flushLevel() const { return m_flushLevel; }
 
-	virtual void writeFileHeader(const std::string& appName);
+	void writeFileHeader(const std::string& appName);
 	void setUseDateTime(bool yes);
 
 	void writeTime();
@@ -88,7 +87,7 @@ public:
 	const XsString filename() const;
 
 	void setTag(const std::string &tag);
-	virtual std::string tag() const;
+	std::string tag() const;
 
 	static void setAdditionalLogger(AbstractAdditionalLogger* additionalLogger);
 
@@ -99,26 +98,28 @@ public:
 	inline static AbstractAdditionalLogger* additionalLogger() { return m_additionalLogger; }
 
 	static std::string tagFromFilename(const std::string &fn);
-	void changeLogFile(const XsString& pathfile, bool purge);
+	void moveLogFile(const XsString& pathfile, bool purge = true, bool eraseOld = true);
+	void moveLogs(Journaller* target, bool eraseOld = true);
 
 private:
-	void init(XsString pathfile, bool purge);
+	void init(XsString const& pathfile, bool purge);
 	void flushLine();
-	static JournalFile* getOrCreateFile(const XsString& fn, bool purge);
 
-	JournalFile* m_file;
+	std::shared_ptr<JournalFile> m_file;
 	std::string m_tag;
 	std::string m_appName;
 	JournalLogLevel m_level;
 	JournalLogLevel m_debugLevel;
 	JournalLogLevel m_flushLevel;
+	std::shared_ptr<JournalThreader> m_threader;
 
 	bool m_useDateTime;
 
 	static AbstractAdditionalLogger* m_additionalLogger;
 
 	// no copying allowed
-	Journaller& operator = (Journaller const&);
+	Journaller& operator = (Journaller const&) = delete;
+	Journaller(Journaller const&) = delete;
 };
 
 #if 1 && (defined(MSC_VER) || 1)	// add exceptions to compilers here that do not (yet) support constexpr. These will fall back to the full path. If the first 1 is set to 0, no path stripping will be done in any case.
@@ -162,13 +163,13 @@ inline static constexpr char const* jlStrippedPathFile(char const* a)
 		if (journal && journal->logLevel(level)) \
 		{ \
 			std::ostringstream os; \
-			os << msg; \
-			journal->log(level, os.str()); \
+			os << msg << '\n'; \
+			journal->writeMessage(os.str()); \
 		} \
 		if (Journaller::hasAdditionalLogger() && Journaller::additionalLogger()->logLevel(level)) \
 		{ \
 			std::ostringstream os; \
-			os << msg; \
+			os << msg << '\n'; \
 			Journaller::additionalLogger()->logNoDecoration(level, STRIPPEDFILE, __LINE__, __FUNCTION__, os.str()); \
 		} \
 	} while(0)
@@ -215,8 +216,13 @@ inline static constexpr char const* jlStrippedPathFile(char const* a)
 #define JLFATAL_NODEC(journal, msg)	JLGENERIC_NODEC(journal, JLL_Fatal, msg)
 #endif
 
-#define JLWRITE(journal, msg)		JLGENERIC(journal, JLL_None, msg)
-#define JLWRITE_NODEC(journal, msg)	JLGENERIC_NODEC(journal, JLL_None, msg)
+#if JLDEF_BUILD > JLL_WRITE
+#define JLWRITE(...)	((void)0)
+#define JLWRITE_NODEC(...)	((void)0)
+#else
+#define JLWRITE(journal, msg)		JLGENERIC(journal, JLL_Write, msg)
+#define JLWRITE_NODEC(journal, msg)	JLGENERIC_NODEC(journal, JLL_Write, msg)
+#endif
 
 // some convenience macros, since we almost always use a global gJournal Journaller
 #define JLTRACEG(msg)	JLTRACE(gJournal, msg)
@@ -225,6 +231,15 @@ inline static constexpr char const* jlStrippedPathFile(char const* a)
 #define JLERRORG(msg)	JLERROR(gJournal, msg)
 #define JLFATALG(msg)	JLFATAL(gJournal, msg)
 #define JLWRITEG(msg)	JLWRITE(gJournal, msg)
+
+// these can be used to log the final result of a value when leaving the function.
+// use JLWRITEFINALG(myvar); or JLDEBUGFINALG(myvar); at the start of your function
+#define JLFINALNAME(a)						#a ": "
+#define JLFINALVALUE(journal, level, a)		JournalValueJanitor<decltype(a)> jlFinalValue ## a(journal, a, [](char const* fi, char const* fu, char const* va) { std::stringstream os; os << fi << " " << fu << " exit " << va; return os.str(); }(__FILE__, __FUNCTION__, JLFINALNAME(a)), level, true)
+#define JLWRITEFINAL(journal, a)			JLFINALVALUE(journal, JLL_Write, a)
+#define JLWRITEFINALG(a)					JLWRITEFINAL(gJournal, a)
+#define JLDEBUGFINAL(journal, a)			JLFINALVALUE(journal, JLL_Debug, a)
+#define JLDEBUGFINALG(a)					JLDEBUGFINAL(gJournal, a)
 
 #endif
 
@@ -277,17 +292,17 @@ template <> std::ostream& operator << (std::ostream& os, JlHexLogger<char> const
 #define JLCASE(s, a)			case a: s << #a << "(" << static_cast<int>(a) << ")"; break;
 #define JLDEFAULTCASE(s)		default: s << "Unknown case: " << static_cast<int>(e); break;
 #define JLENUMEXPPROTO(E)		std::ostream& operator << (std::ostream& dbg, E const& e)
-#define JLENUMEXPHDR(E, ...)			/*! \brief Translate \a e into a text representation */ JLENUMEXPPROTO(E) { __VA_ARGS__ switch(e) {
+#define JLENUMEXPHDR(E, ...)	/*! \brief Translate \a e into a text representation */ JLENUMEXPPROTO(E) { __VA_ARGS__ switch(e) {
 #define JLENUMCASE(a)			JLCASE(dbg, a)
 #define JLENUMCASE2(a, b)		JLCASE2(dbg, a, b)
-#define JLENUMEXPFTR()			JLDEFAULTCASE(dbg) } return dbg; }
+#define JLENUMEXPFTR(...)		JLDEFAULTCASE(dbg) } __VA_ARGS__ return dbg; }
 /*! Use this macro to define enum expansion to a text stream. supply the type as parameter \a E and all
 	enum values you want to expand as a sequence of JLENUMCASE(item) (no commas) */
 #define JLENUMEXPANDER(E, items)	JLENUMEXPHDR(E) items JLENUMEXPFTR()
 
 /*! Use this macro to define enum expansion to a text stream. supply the type as parameter \a E and all
 	enum values you want to expand as a sequence of JLENUMCASE(item) (no commas) */
-#define JLENUMEXPANDERHEX(E, items)	JLENUMEXPHDR(E, dbg.setf (std::ios_base::hex , std::ios_base::basefield); dbg.setf (std::ios_base::showbase | std::ios_base::uppercase);) items JLENUMEXPFTR()
+#define JLENUMEXPANDERHEX(E, items)	JLENUMEXPHDR(E, dbg << std::hex << std::uppercase;) items JLENUMEXPFTR(dbg << std::dec << std::nouppercase;)
 
 #define JLQTDEBUGHANDLER	\
 QtMessageHandler gOldQtMessageHandler = nullptr; \
@@ -298,16 +313,16 @@ void jlQtMessageHandler(QtMsgType type, const QMessageLogContext &context, const
 	if (!qtJournal)	return;\
 	switch (type) {\
 	case QtDebugMsg:\
-		JLDEBUG_NODEC(qtJournal, (const char *)msg.toLatin1());\
+		JLDEBUG(qtJournal, (const char *)msg.toLatin1());\
 		break;\
 	case QtWarningMsg:\
-		JLALERT_NODEC(qtJournal, (const char *)msg.toLatin1());\
+		JLALERT(qtJournal, (const char *)msg.toLatin1());\
 		break;\
 	case QtCriticalMsg:\
-		JLERROR_NODEC(qtJournal, (const char *)msg.toLatin1());\
+		JLERROR(qtJournal, (const char *)msg.toLatin1());\
 		break;\
 	case QtFatalMsg:\
-		JLFATAL_NODEC(qtJournal, (const char *)msg.toLatin1());\
+		JLFATAL(qtJournal, (const char *)msg.toLatin1());\
 		abort();\
 	default:\
 		break;\

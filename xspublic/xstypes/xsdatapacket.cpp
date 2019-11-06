@@ -182,6 +182,11 @@ Variant* createVariant(XsDataIdentifier id)
 	case XDI_RawBlob				:// 0xA080
 		return new XsByteArrayVariant(id);
 
+	case XDI_GloveSnapshot:			// 0xC830
+		return new XsGloveSnapshotVariant(id);
+	case XDI_GloveData:				// 0xC840
+		return new XsGloveDataVariant(id);
+
 	default:
 		//JLERRORG("Unknown id: " << id);
 		assert(0);
@@ -386,6 +391,18 @@ void XsDataPacket_construct(XsDataPacket* thisPtr)
 	thisPtr->m_toa = 0;
 	thisPtr->m_packetId = -1;
 	thisPtr->m_etos = 0;
+}
+
+/*! \brief Inits a data packet as a (referenced) copy of \a src
+*/
+void XsDataPacket_copyConstruct(XsDataPacket* thisPtr, XsDataPacket const* src)
+{
+	++src->d->m_refCount;
+	thisPtr->d = src->d;
+	thisPtr->m_deviceId = src->m_deviceId;
+	thisPtr->m_toa = src->m_toa;
+	thisPtr->m_packetId = src->m_packetId;
+	thisPtr->m_etos = src->m_etos;
 }
 
 /*! \brief Clears and frees data in an XsDataPacket
@@ -665,6 +682,16 @@ XsScrData* XsDataPacket_rawData(const XsDataPacket* thisPtr, XsScrData* returnVa
 	auto it = MAP.find(XDI_RawAccGyrMagTemp);
 	if (it != MAP.end())
 		*returnVal = it->second->toDerived<XsScrDataVariant>().m_data;
+	else
+	{
+		for (XsSize i = 0; i < 3; ++i)
+		{
+			returnVal->m_acc[i] = 0;
+			returnVal->m_gyr[i] = 0;
+			returnVal->m_mag[i] = 0;
+		}
+		returnVal->m_temp = 0;
+	}
 	return returnVal;	// not found
 }
 
@@ -1148,7 +1175,7 @@ XsPressure* XsDataPacket_pressure(const XsDataPacket* thisPtr, XsPressure* retur
 */
 void XsDataPacket_setPressure(XsDataPacket* thisPtr, const XsPressure* data)
 {
-	GenericSimple<uint32_t>::set(thisPtr, XsMath::doubleToLong(data->m_pressure), XDI_BaroPressure);
+	GenericSimple<uint32_t>::set(thisPtr, (uint32_t) XsMath::doubleToLong(data->m_pressure), XDI_BaroPressure);
 	GenericSimple<uint8_t>::set(thisPtr, data->m_pressureAge, XDI_PressureAge);
 }
 
@@ -1186,6 +1213,31 @@ void XsDataPacket_setSdiData(XsDataPacket* thisPtr, const XsSdiData* data)
 {
 	genericSet<XsQuaternion, XsQuaternionVariant>(thisPtr, &data->orientationIncrement(), XDI_DeltaQ | XDI_SubFormatDouble);
 	genericSet<XsVector3, XsVector3Variant>(thisPtr, &data->velocityIncrement(), XDI_DeltaV | XDI_SubFormatDouble);
+}
+
+/*! \brief Return the glove data component of a data item.
+\param returnVal Storage for the requested data
+\returns Returns the supplied \a returnVal filled with the requested data
+*/
+XsGloveData* XsDataPacket_gloveData(const XsDataPacket* thisPtr, XsGloveData* returnVal)
+{
+	return genericGet<XsGloveData, XsGloveDataVariant>(thisPtr, returnVal, XDI_GloveData);
+}
+
+/*! \brief Check if data item contains glove data
+\returns Returns true if this packet contains sdi data
+*/
+int XsDataPacket_containsGloveData(const XsDataPacket* thisPtr)
+{
+	return genericContains(thisPtr, XDI_GloveData);
+}
+
+/*! \brief Add/update strapdown integration data for the item
+\param data The updated data
+*/
+void XsDataPacket_setGloveData(XsDataPacket* thisPtr, const XsGloveData* data)
+{
+	genericSet<XsGloveData, XsGloveDataVariant>(thisPtr, data, XDI_GloveData);
 }
 
 /*! \brief The device id of a data item.
@@ -2058,7 +2110,8 @@ XsDataPacket* XsDataPacket_merge(XsDataPacket* thisPtr, const XsDataPacket* othe
 		if (genericContains(thisPtr, id1) &&
 			genericContains(thisPtr, id2))
 		{
-			if (genericContains(other, id1) ^ over)
+			bool gc = genericContains(other, id1);
+			if ((gc && !over) || (!gc && over))	// logical xor does not exist in C++, write it explicitly
 				MAP.erase(id1);
 			else
 				MAP.erase(id2);
@@ -2091,22 +2144,21 @@ void XsDataPacket_setMessage(XsDataPacket* thisPtr, const XsMessage* msg)
 {
 	XsDataPacket_clear(thisPtr, XDI_None);
 
-	int offset = 0;
-	int sz = (int) msg->getDataSize();
+	XsSize offset = 0;
+	XsSize sz = msg->getDataSize();
 
-	while (offset+4 <= sz)	// minimum size of an item is 2(ID) + 1(size) + 1(minimum size)
+	while (offset+3 <= sz)	// minimum size of an item is 2(ID) + 1(size) + 0(minimum size)
 	{
 		XsDataIdentifier id = static_cast<XsDataIdentifier>(XsMessage_getDataShort(msg, offset));
-		uint8_t itemSize = XsMessage_getDataByte(msg, offset+2);
-		if (offset + itemSize + 3 > sz || itemSize == 0)
+		XsSize itemSize = XsMessage_getDataByte(msg, offset+2);
+		if (offset + itemSize + 3 > sz)
 			break;	// the item is corrupt
 
 		Variant* var = createVariant(id);
 		if (var)
 		{
-			var->readFromMessage(*msg, offset+3, itemSize);
+			itemSize = var->readFromMessage(*msg, offset+3, itemSize);
 			MAP.insert(id, var);
-			assert(var->sizeInMsg() == itemSize);	// this is not strictly necessary, but useful during initial development
 		}
 		offset += 3 + itemSize;	// never use var->sizeInMsg() here, since it _may_ differ
 	}
@@ -2128,15 +2180,34 @@ void XsDataPacket_toMessage(const XsDataPacket* thisPtr, XsMessage* msg)
 	msg->resizeData(0);	// clear the data part while leaving header intact
 	msg->setMessageId(XMID_MtData2);
 
-	int offset = 0;
+	XsSize offset = 0;
 	msg->resizeData(2048);	// prevent constant message resizing by pre-allocating a large message and later reducing its size
 	for (auto const& i : MAP)
 	{
-		msg->setDataShort((uint16_t) i.second->dataId(), offset);
-		int sz = i.second->sizeInMsg();
-		msg->setDataByte((uint8_t)(int8_t)sz, offset+2);
-		i.second->writeToMessage(*msg, offset+3);
-		offset += 3+sz;
+		XsSize sz = i.second->sizeInMsg();
+		if (sz < 255)
+		{
+			msg->setDataShort((uint16_t) i.second->dataId(), offset);
+			msg->setDataByte((uint8_t)sz, offset+2);
+			i.second->writeToMessage(*msg, offset+3);
+			offset += 3+sz;
+		}
+		else
+		{
+			XsSize sz2 = sz;
+			XsSize offset2 = offset;
+			while (sz2 >= 255)
+			{
+				msg->setDataShort((uint16_t) i.second->dataId(), offset2);
+				msg->setDataByte((uint8_t)255, offset2+2);
+				offset2 += 258;
+				sz2 -= 255;
+			}
+			msg->setDataShort((uint16_t) i.second->dataId(), offset2);
+			msg->setDataByte((uint8_t)sz2, offset2+2);	// note that this size may be 0
+			i.second->writeToMessage(*msg, offset+3);	// individual write functions should takke extended size into account
+			offset = offset2+3+sz2;
+		}
 	}
 	msg->resizeData(offset);
 }
@@ -2210,6 +2281,35 @@ int XsDataPacket_isAwindaSnapshotARetransmission(const XsDataPacket* thisPtr)
 	return (it->second->dataId() & XDI_RetransmissionMask) == XDI_RetransmissionFlag;
 }
 
+/*! \brief Returns the Glove Snapshot part of the XsDataPacket
+\details Glove Snapshot is an internal format used by Xsens devices for high accuracy data transfer.
+In most cases XDA processing will remove this item from the XsDataPacket and replace it with items that
+are more directly usable.
+\param returnVal The object to store the requested data in. This must be a properly constructed object.
+\returns The supplied \a returnVal, filled with the requested data or cleared if it was not available
+*/
+XsGloveSnapshot* XsDataPacket_gloveSnapshot(const XsDataPacket* thisPtr, XsGloveSnapshot* returnVal)
+{
+	return genericGet<XsGloveSnapshot, XsGloveSnapshotVariant>(thisPtr, returnVal, XDI_GloveSnapshot);
+}
+
+/*! \brief Returns true if the XsDataPacket contains Glove Snapshot data
+\returns true if the XsDataPacket contains Glove Snapshot data
+*/
+int XsDataPacket_containsGloveSnapshot(const XsDataPacket* thisPtr)
+{
+	return genericContains(thisPtr, XDI_GloveSnapshot);
+}
+
+/*! \brief Sets the Glove Snapshot part of the XsDataPacket
+\param data The new data to set
+\param retransmission When non-zero, the item is marked as a retransmitted packet
+*/
+void XsDataPacket_setGloveSnapshot(XsDataPacket* thisPtr, XsGloveSnapshot const * data, int retransmission)
+{
+	genericSet<XsGloveSnapshot, XsGloveSnapshotVariant>(thisPtr, data, XDI_GloveSnapshot | (retransmission ? XDI_RetransmissionFlag : XDI_None));
+}
+
 /*! \brief Converts input vector \a input with data identifier \a id to output XsVector \a returnVal */
 static void convertRawVector(XsUShortVector const& input, XsDataIdentifier id, XsVector& returnVal)
 {
@@ -2217,7 +2317,7 @@ static void convertRawVector(XsUShortVector const& input, XsDataIdentifier id, X
 	returnVal.setSize(3);
 	if ((id & XDI_DataFormatMask) == XDI_RawSigned)
 		caster = signed_cast;
-	for (int i = 0; i < 3; i++)
+	for (XsSize i = 0; i < 3; i++)
 		returnVal[i] = caster(input[i]);
 }
 

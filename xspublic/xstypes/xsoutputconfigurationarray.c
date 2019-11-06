@@ -81,7 +81,7 @@ XsArrayDescriptor const g_xsOutputConfigurationArrayDescriptor = {
 	XSEXPCASTRAWCOPY XsArray_rawCopy	// raw copy
 };
 
-/*! \copydoc XsArray_construct
+/*! \copydoc XsArray_constructDerived
 	\note Specialization for XsOutputConfigurationArray
 */
 void XsOutputConfigurationArray_construct(XsOutputConfigurationArray* thisPtr, XsSize count, XsOutputConfiguration const* src)

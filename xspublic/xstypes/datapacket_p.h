@@ -50,6 +50,8 @@
 #include "xsrawgnsspvtdata.h"
 #include "xsrawgnsssatinfo.h"
 #include "xsbytearray.h"
+#include "xsglovesnapshot.h"
+#include "xsglovedata.h"
 
 #include "xssnapshot.h"
 
@@ -62,11 +64,11 @@ namespace XsDataPacket_Private {
 		Variant(XsDataIdentifier id) : m_id(id) {}
 		virtual ~Variant() {}
 		/*! \brief Read the data from message \a msg at \a offset and optionally using \a dSize */
-		virtual void readFromMessage(XsMessage const& msg, int offset, int dSize) = 0;
+		virtual XsSize readFromMessage(XsMessage const& msg, XsSize offset, XsSize dSize) = 0;
 		/*! \brief Write the data to message \a msg at \a offset */
-		virtual void writeToMessage(XsMessage& msg, int offset) const = 0;
+		virtual void writeToMessage(XsMessage& msg, XsSize offset) const = 0;
 		/*! \brief Return the size the Variant would have in a message */
-		virtual int sizeInMsg() const = 0;
+		virtual XsSize sizeInMsg() const = 0;
 		/*! \brief Create a copy of the Variant
 			\return A pointer to the newly created Variant
 			\note This needs to be reimplemented in each subclass!
@@ -112,12 +114,13 @@ namespace XsDataPacket_Private {
 		GenericVariant(XsDataIdentifier id) : Variant(id) {}
 
 		/*! \brief Read the data from message \a msg at \a offset and optionally using \a dSize */
-		void readFromMessage(XsMessage const& msg, int offset, int /*ignored*/) override
+		XsSize readFromMessage(XsMessage const& msg, XsSize offset, XsSize sz) override
 		{
 			msg.getData<T>(data(), dataId(), offset, C);
+			return sz;
 		}
 		/*! \brief Write the data to message \a msg at \a offset */
-		void writeToMessage(XsMessage& msg, int offset) const override
+		void writeToMessage(XsMessage& msg, XsSize offset) const override
 		{
 			msg.setData<T>(constData(), dataId(), offset, C);
 		}
@@ -127,24 +130,25 @@ namespace XsDataPacket_Private {
 		virtual T const* constData() const = 0;
 
 		/*! \brief Return the size the Variant would have in a message */
-		int sizeInMsg() const override
+		XsSize sizeInMsg() const override
 		{
-			return XsMessage::sizeInMsg<T>(dataId(), C);
+			return (XsSize)(ptrdiff_t) XsMessage::sizeInMsg<T>(dataId(), C);
 		}
 	};
 
 	/*! \brief Read the data from the message \a msg at the given \a offset */
 	template<>
-	inline void GenericVariant<uint64_t, 1>::readFromMessage(XsMessage const& msg, int offset, int /*ignored*/)
+	inline XsSize GenericVariant<uint64_t, 1>::readFromMessage(XsMessage const& msg, XsSize offset, XsSize sz)
 	{
 		*data() = 0;
 		*data() = ((uint64_t)XsMessage_getDataLong(&msg, offset)) << 32;
 		*data() += ((uint64_t)XsMessage_getDataLong(&msg, offset + 4));
+		return sz;
 	}
 
 	/*! \brief Write the data to the message \a msg at the given \a offset */
 	template<>
-	inline void GenericVariant<uint64_t, 1>::writeToMessage(XsMessage& msg, int offset) const
+	inline void GenericVariant<uint64_t, 1>::writeToMessage(XsMessage& msg, XsSize offset) const
 	{
 		XsMessage_setDataLong(&msg, (uint32_t) ((*constData()) >> 32), offset);
 		XsMessage_setDataLong(&msg, (uint32_t) ((*constData()) & 0xFFFFFFFF), offset);
@@ -182,7 +186,7 @@ namespace XsDataPacket_Private {
 		}
 
 		/*! \brief Return the size the Variant would have in a message */
-		int sizeInMsg() const override
+		XsSize sizeInMsg() const override
 		{
 			return XsMessage::sizeInMsg<T>(dataId(), 1);
 		}
@@ -292,28 +296,29 @@ namespace XsDataPacket_Private {
 		}
 
 		XsScrData m_data;			//!< The contained data
-		void readFromMessage(XsMessage const& msg, int offset, int /*ignored*/) override
+		XsSize readFromMessage(XsMessage const& msg, XsSize offset, XsSize sz) override
 		{
-			for (int i = 0; i < 3; ++i, offset +=2)
+			for (XsSize i = 0; i < 3; ++i, offset +=2)
 				m_data.m_acc[i] = msg.getDataShort(offset);
-			for (int i = 0; i < 3; ++i, offset +=2)
+			for (XsSize i = 0; i < 3; ++i, offset +=2)
 				m_data.m_gyr[i] = msg.getDataShort(offset);
-			for (int i = 0; i < 3; ++i, offset +=2)
+			for (XsSize i = 0; i < 3; ++i, offset +=2)
 				m_data.m_mag[i] = msg.getDataShort(offset);
 			m_data.m_temp = msg.getDataShort(offset);
+			return sz;
 		}
-		void writeToMessage(XsMessage& msg, int offset) const override
+		void writeToMessage(XsMessage& msg, XsSize offset) const override
 		{
-			for (int i = 0; i < 3; ++i, offset +=2)
+			for (XsSize i = 0; i < 3; ++i, offset +=2)
 				msg.setDataShort(m_data.m_acc[i], offset);
-			for (int i = 0; i < 3; ++i, offset +=2)
+			for (XsSize i = 0; i < 3; ++i, offset +=2)
 				msg.setDataShort(m_data.m_gyr[i], offset);
-			for (int i = 0; i < 3; ++i, offset +=2)
+			for (XsSize i = 0; i < 3; ++i, offset +=2)
 				msg.setDataShort(m_data.m_mag[i], offset);
 			msg.setDataShort(m_data.m_temp, offset);
 		}
 
-		int sizeInMsg() const override
+		XsSize sizeInMsg() const override
 		{
 			return 10*sizeof(uint16_t);
 		}
@@ -332,14 +337,15 @@ namespace XsDataPacket_Private {
 		}
 
 		XsTriggerIndicationData m_data;			//!< The contained data
-		void readFromMessage(XsMessage const& msg, int offset, int /*ignored*/) override
+		XsSize readFromMessage(XsMessage const& msg, XsSize offset, XsSize sz) override
 		{
 			m_data.m_line        = XsMessage_getDataByte (&msg, offset + 0);
 			m_data.m_polarity    = XsMessage_getDataByte (&msg, offset + 1);
 			m_data.m_timestamp   = XsMessage_getDataLong (&msg, offset + 2);
 			m_data.m_frameNumber = XsMessage_getDataShort(&msg, offset + 6);
+			return sz;
 		}
-		void writeToMessage(XsMessage& msg, int offset) const override
+		void writeToMessage(XsMessage& msg, XsSize offset) const override
 		{
 			XsMessage_setDataByte (&msg, m_data.m_line,        offset + 0);
 			XsMessage_setDataByte (&msg, m_data.m_polarity,    offset + 1);
@@ -347,7 +353,7 @@ namespace XsDataPacket_Private {
 			XsMessage_setDataShort(&msg, m_data.m_frameNumber, offset + 6);
 		}
 
-		int sizeInMsg() const override
+		XsSize sizeInMsg() const override
 		{
 			return 8;
 		}
@@ -378,20 +384,21 @@ namespace XsDataPacket_Private {
 			return new XsMatrixVariant(dataId(), m_data);
 		}
 
-		void readFromMessage(XsMessage const& msg, int offset, int /*ignored*/) override
+		XsSize readFromMessage(XsMessage const& msg, XsSize offset, XsSize sz) override
 		{
-			int ds = XsMessage_getFPValueSize(dataId());
-			int k = 0;
+			XsSize ds = XsMessage_getFPValueSize(dataId());
+			XsSize k = 0;
 			for (int i=0 ; i<3 ; ++i)
-				for (int j=0 ; j<3 ; ++j, k+=ds)
+				for (XsSize j=0 ; j<3 ; ++j, k+=ds)
 					XsMessage_getDataRealValuesById(&msg, dataId(), &m_data[j][i], offset+k, 1);
+			return sz;
 		}
-		void writeToMessage(XsMessage& msg, int offset) const override
+		void writeToMessage(XsMessage& msg, XsSize offset) const override
 		{
-			int ds = XsMessage_getFPValueSize(dataId());
-			int k = 0;
+			XsSize ds = XsMessage_getFPValueSize(dataId());
+			XsSize k = 0;
 			for (int i=0 ; i<3 ; ++i)
-				for (int j=0 ; j<3 ; ++j, k+=ds)
+				for (XsSize j=0 ; j<3 ; ++j, k+=ds)
 					XsMessage_setDataRealValuesById(&msg, dataId(), &m_data[j][i], offset+k, 1);
 		}
 	};
@@ -409,20 +416,21 @@ namespace XsDataPacket_Private {
 		}
 
 		XsRange m_data;			//!< The contained data
-		void readFromMessage(XsMessage const& msg, int offset, int /*ignored*/) override
+		XsSize readFromMessage(XsMessage const& msg, XsSize offset, XsSize sz) override
 		{
 			// unwrap
 			uint16_t first = (uint16_t) XsMessage_getDataShort(&msg, offset + 0);
 			uint16_t last = (uint16_t) XsMessage_getDataShort(&msg, offset + 2);
 			m_data.setRange(first, (int)((uint16_t)(last - first)) + (int)first);
+			return sz;
 		}
-		void writeToMessage(XsMessage& msg, int offset) const override
+		void writeToMessage(XsMessage& msg, XsSize offset) const override
 		{
 			XsMessage_setDataShort(&msg, (uint16_t) m_data.first(), offset + 0);
 			XsMessage_setDataShort(&msg, (uint16_t) m_data.last(), offset + 2);
 		}
 
-		int sizeInMsg() const override
+		XsSize sizeInMsg() const override
 		{
 			return 4;
 		}
@@ -441,33 +449,34 @@ namespace XsDataPacket_Private {
 		}
 
 		XsTimeInfo m_data;			//!< The contained data
-		void readFromMessage(XsMessage const& msg, int offset, int /*ignored*/) override
+		XsSize readFromMessage(XsMessage const& msg, XsSize offset, XsSize sz) override
 		{
 			m_data.m_nano = XsMessage_getDataLong(&msg, offset);
 			m_data.m_year = XsMessage_getDataShort(&msg, offset+4);
 
 			// month, day, hour, minute, second and valid
 			uint8_t* bareByte = (uint8_t*) &m_data.m_month;
-			for (int i=0; i < 6; ++i)
+			for (XsSize i=0; i < 6; ++i)
 				bareByte[i] = XsMessage_getDataByte(&msg, offset + 6 + i);
 
 			m_data.m_utcOffset = 0;
+			return sz;
 		}
-		void writeToMessage(XsMessage& msg, int offset) const override
+		void writeToMessage(XsMessage& msg, XsSize offset) const override
 		{
 			// update
 			XsMessage_setDataLong(&msg, m_data.m_nano, offset);
 			XsMessage_setDataShort(&msg, m_data.m_year, offset + 4);
 
 			// month, day, hour, minute, second and valid
-			uint8_t* bareByte = (uint8_t*) &m_data.m_month;
-			for (int i=0; i<6;++i)
+			uint8_t const* bareByte = (uint8_t const*) &m_data.m_month;
+			for (XsSize i=0; i<6;++i)
 				XsMessage_setDataByte(&msg, bareByte[i], offset + 6 + i);
 
 			// utcOffset is ignored and assumed to be 0, use makeUtc to ensure this if necessary
 		}
 
-		int sizeInMsg() const override
+		XsSize sizeInMsg() const override
 		{
 			return 12;
 		}
@@ -486,7 +495,7 @@ namespace XsDataPacket_Private {
 		}
 
 		XsRawGnssPvtData m_data;			//!< The contained data
-		void readFromMessage(XsMessage const& msg, int offset, int /*ignored*/) override
+		XsSize readFromMessage(XsMessage const& msg, XsSize offset, XsSize sz) override
 		{
 			m_data.m_itow    = XsMessage_getDataLong(&msg, offset + 0);
 			m_data.m_year   = XsMessage_getDataShort(&msg, offset + 4);
@@ -523,8 +532,9 @@ namespace XsDataPacket_Private {
 			m_data.m_hdop   = XsMessage_getDataShort(&msg, offset + 88);
 			m_data.m_ndop   = XsMessage_getDataShort(&msg, offset + 90);
 			m_data.m_edop   = XsMessage_getDataShort(&msg, offset + 92);
+			return sz;
 		}
-		void writeToMessage(XsMessage& msg, int offset) const override
+		void writeToMessage(XsMessage& msg, XsSize offset) const override
 		{
 			XsMessage_setDataLong (&msg, m_data.m_itow   , offset + 0);
 			XsMessage_setDataShort(&msg, m_data.m_year   , offset + 4);
@@ -563,7 +573,7 @@ namespace XsDataPacket_Private {
 			XsMessage_setDataShort(&msg, m_data.m_edop   , offset + 92);
 		}
 
-		int sizeInMsg() const override
+		XsSize sizeInMsg() const override
 		{
 			return 94;
 		}
@@ -582,7 +592,7 @@ namespace XsDataPacket_Private {
 		}
 
 		XsRawGnssSatInfo m_data;			//!< The contained data
-		void readFromMessage(XsMessage const& msg, int offset, int /*ignored*/) override
+		XsSize readFromMessage(XsMessage const& msg, XsSize offset, XsSize sz) override
 		{
 			m_data.m_itow   = XsMessage_getDataLong(&msg, offset + 0);
 			m_data.m_numSvs = XsMessage_getDataByte(&msg, offset + 4);
@@ -599,8 +609,9 @@ namespace XsDataPacket_Private {
 				m_data.m_satInfos[i].m_flags  = XsMessage_getDataByte(&msg, offset + 3);
 				offset += 4;
 			}
+			return sz;
 		}
-		void writeToMessage(XsMessage& msg, int offset) const override
+		void writeToMessage(XsMessage& msg, XsSize offset) const override
 		{
 			XsMessage_setDataLong(&msg, m_data.m_itow   , offset + 0);
 			XsMessage_setDataByte(&msg, m_data.m_numSvs , offset + 4);
@@ -619,7 +630,7 @@ namespace XsDataPacket_Private {
 			}
 		}
 
-		int sizeInMsg() const override
+		XsSize sizeInMsg() const override
 		{
 			return 8 + 4*m_data.m_numSvs;
 		}
@@ -639,7 +650,7 @@ namespace XsDataPacket_Private {
 		}
 
 		XsSnapshot m_data;			//!< The contained data
-		void readFromMessage(XsMessage const& msg, int offset, int /*ignored*/) override
+		XsSize readFromMessage(XsMessage const& msg, XsSize offset, XsSize sz) override
 		{
 			m_data.m_frameNumber = XsMessage_getDataShort(&msg, offset); offset += 2;
 			m_data.m_timestamp = XsMessage_getDataLongLong(&msg, offset); offset += 8;
@@ -655,12 +666,13 @@ namespace XsDataPacket_Private {
 			m_data.m_gyrClippingCounter = XsMessage_getDataByte(&msg, offset); offset += 1;
 			m_data.m_status = XsMessage_getDataShort(&msg, offset);
 			m_data.m_type = ST_Full;
+			return sz;
 		}
 
-		void writeToMessage(XsMessage& msg, int offset) const override
+		void writeToMessage(XsMessage& msg, XsSize offset) const override
 		{
 			assert(m_data.m_type == ST_Full);
-			XsMessage_setDataShort(&msg, m_data.m_frameNumber, offset);	offset += 2;
+			XsMessage_setDataShort(&msg, (uint16_t) m_data.m_frameNumber, offset);	offset += 2;
 			XsMessage_setDataLongLong(&msg, m_data.m_timestamp, offset); offset += 8;
 			for (int i = 0; i < 4; ++i, offset += 4)
 				XsMessage_setDataLong(&msg, m_data.m_iQ[i], offset);
@@ -675,7 +687,7 @@ namespace XsDataPacket_Private {
 			XsMessage_setDataShort(&msg, m_data.m_status, offset);
 		}
 
-		int sizeInMsg() const override
+		XsSize sizeInMsg() const override
 		{
 			return 70;
 		}
@@ -700,23 +712,24 @@ namespace XsDataPacket_Private {
 		}
 
 		XsSnapshot m_data;			//!< The contained data
-		void readFromMessage(XsMessage const& msg, int offset, int /*ignored*/) override
+		XsSize readFromMessage(XsMessage const& msg, XsSize offset, XsSize sz) override
 		{
 			m_data.m_deviceId    = XsMessage_getDataLong(&msg, offset);	offset += 4;
 			m_data.m_frameNumber = XsMessage_getDataLong(&msg, offset);	offset += 4;
 			for (int i = 0; i < 3; ++i, offset += 4)
 				m_data.m_iQ[i] = XsMessage_getDataLong(&msg, offset);
 			for (int i = 0; i < 3; ++i, offset += 4)
-				m_data.m_iV[i] = (int64_t) (int32_t) XsMessage_getDataLong(&msg, offset);
+				m_data.m_iV[i] = (int64_t)(int32_t) XsMessage_getDataLong(&msg, offset);
 			for (int i = 0; i < 3; ++i, offset += 2)
-				m_data.m_mag[i] = (int32_t)(int16_t)XsMessage_getDataShort(&msg, offset);
+				m_data.m_mag[i] = (int32_t)(int16_t) XsMessage_getDataShort(&msg, offset);
 			m_data.m_baro = XsMessage_getDataLong(&msg, offset);	offset += 4;
 			m_data.m_status = XsMessage_getDataShort(&msg, offset);	offset += 2;
 			m_data.m_accClippingCounter = XsMessage_getDataByte(&msg, offset);	offset += 1;
 			m_data.m_gyrClippingCounter = XsMessage_getDataByte(&msg, offset);
 			m_data.m_type = ST_Awinda;
+			return sz;
 		}
-		void writeToMessage(XsMessage& msg, int offset) const override
+		void writeToMessage(XsMessage& msg, XsSize offset) const override
 		{
 			assert(m_data.m_type == ST_Awinda);
 			XsMessage_setDataLong(&msg, m_data.m_deviceId.legacyDeviceId(), offset);	offset += 4;
@@ -724,16 +737,16 @@ namespace XsDataPacket_Private {
 			for (int i = 0; i < 3; ++i, offset += 4)
 				XsMessage_setDataLong(&msg, m_data.m_iQ[i], offset);
 			for (int i = 0; i < 3; ++i, offset += 4)
-				XsMessage_setDataLong(&msg, (uint32_t) (int32_t) m_data.m_iV[i], offset);
+				XsMessage_setDataLong(&msg, (uint32_t)(int32_t) m_data.m_iV[i], offset);
 			for (int i = 0; i < 3; ++i, offset += 2)
-				XsMessage_setDataShort(&msg, m_data.m_mag[i], offset);
+				XsMessage_setDataShort(&msg, (uint16_t)(int16_t) m_data.m_mag[i], offset);
 			XsMessage_setDataLong(&msg, m_data.m_baro, offset);	offset += 4;
 			XsMessage_setDataShort(&msg, m_data.m_status, offset);	offset += 2;
 			XsMessage_setDataByte(&msg, m_data.m_accClippingCounter, offset);	offset += 1;
 			XsMessage_setDataByte(&msg, m_data.m_gyrClippingCounter, offset);
 		}
 
-		int sizeInMsg() const override
+		XsSize sizeInMsg() const override
 		{
 			return 46;
 		}
@@ -756,18 +769,204 @@ namespace XsDataPacket_Private {
 		}
 
 		XsByteArray m_data;			//!< The contained data
-		void readFromMessage(XsMessage const& msg, int offset, int dSize) override
+		XsSize readFromMessage(XsMessage const& msg, XsSize offset, XsSize dSize) override
 		{
-			m_data.assign(dSize, XsMessage_getDataBuffer(&msg, offset));
+			if (dSize)
+			{
+				if (dSize < 255)
+				{
+					m_data.assign(dSize, XsMessage_getDataBuffer(&msg, offset));
+					return dSize;
+				}
+				else
+				{
+					const uint16_t exactId = XsMessage_getDataShort(&msg, offset-3);
+					XsSize msgSize = msg.getDataSize();
+					XsSize total = 0;
+
+					// look ahead to get total size
+					XsSize sSize = dSize;
+					XsSize sOffset = offset;
+					XsSize tSize = 255;
+					while (sSize == 255)
+					{
+						sOffset += 255;
+						if (sOffset >= msgSize)
+							break;
+						uint16_t nextId = XsMessage_getDataShort(&msg, sOffset);
+						if (nextId != exactId)
+							break;
+						sSize = XsMessage_getDataByte(&msg, sOffset+2);
+						sOffset += 3;
+						tSize += sSize;
+					}
+					m_data.setSize(tSize);
+
+					sOffset = 0;
+					while (dSize == 255)
+					{
+						memcpy(m_data.data()+sOffset, XsMessage_getDataBuffer(&msg, offset), 255);
+						total += 258;
+						offset += 255;
+						sOffset += 255;
+						if (offset >= msgSize)
+						{
+							dSize = 0;
+							break;
+						}
+						uint16_t nextId = XsMessage_getDataShort(&msg, offset);
+						if (nextId != exactId)
+						{
+							dSize = 0;
+							break;
+						}
+						dSize = XsMessage_getDataByte(&msg, offset+2);
+						offset += 3;
+					}
+					if (dSize)
+					{
+						memcpy(m_data.data()+sOffset, XsMessage_getDataBuffer(&msg, offset), dSize);
+						total += dSize;
+					}
+					return total;
+				}
+			}
+			else
+			{
+				m_data.clear();
+				return 0;
+			}
 		}
-		void writeToMessage(XsMessage& msg, int offset) const override
+		void writeToMessage(XsMessage& msg, XsSize offset) const override
 		{
-			XsMessage_setDataBuffer(&msg, m_data.data(), m_data.size(), offset);
+			if (m_data.size())
+			{
+				if (m_data.size() < 255)
+					XsMessage_setDataBuffer(&msg, m_data.data(), m_data.size(), offset);
+				else
+				{
+					XsSize dataOffset = 0;
+					XsSize remainingSize = m_data.size();
+					while (remainingSize >= 255)
+					{
+						XsMessage_setDataBuffer(&msg, m_data.data() + dataOffset, 255, offset);
+						offset += 258;
+						dataOffset += 255;
+						remainingSize -= 255;
+					}
+					if (remainingSize)
+						XsMessage_setDataBuffer(&msg, m_data.data() + dataOffset, remainingSize, offset);
+				}
+			}
 		}
 
-		int sizeInMsg() const override
+		XsSize sizeInMsg() const override
 		{
-			return (int) m_data.size();
+			return m_data.size();
+		}
+	};
+
+	/*! \brief Variant containing an XsGloveSnapshotVariant value */
+	struct XsGloveSnapshotVariant : public Variant
+	{
+		/*! \brief Constructor, sets the dataId to \a id */
+		XsGloveSnapshotVariant(XsDataIdentifier id) : Variant(id)
+		{
+		}
+		/*! \brief Constructor, sets the dataId to \a id and data value to \a val */
+		XsGloveSnapshotVariant(XsDataIdentifier id, XsGloveSnapshot const& val) : Variant(id), m_data(val)
+		{
+		}
+		Variant* clone() const override
+		{
+			return new XsGloveSnapshotVariant(dataId(), m_data);
+		}
+
+		XsGloveSnapshot m_data;			//!< The contained data
+		XsSize readFromMessage(XsMessage const& msg, XsSize offset, XsSize dSize) override
+		{
+			const uint16_t exactId = XsMessage_getDataShort(&msg, offset - 3);
+			assert(dSize == 255);
+			if (dSize != 255)
+				return 0;
+			memcpy((uint8_t*)&m_data, XsMessage_getDataBuffer(&msg, offset), 255);
+			offset += 255;
+			uint16_t nextId = XsMessage_getDataShort(&msg, offset);
+			assert(nextId == exactId);
+			if (nextId != exactId)
+				return 0;
+			dSize = XsMessage_getDataByte(&msg, offset + 2);
+			assert(dSize == 124);
+			if (dSize != 124)
+				return 0;
+			offset += 3;
+			memcpy(((uint8_t*)&m_data)+255, XsMessage_getDataBuffer(&msg, offset), 124);
+
+			// loop over finger / struct and swap bytes
+			m_data.m_snapshotCounter = (uint16_t)swapEndian16(m_data.m_snapshotCounter);
+			m_data.m_validSampleFlags = (uint16_t)swapEndian16(m_data.m_validSampleFlags);
+			m_data.m_timestamp = (uint16_t)swapEndian16(m_data.m_timestamp);
+
+			for (int i = 0; i < 12; ++i)
+			{
+				for (int j = 0; j < 3; ++j)
+				{
+					{
+						auto& tmp = m_data.m_fingers[i].m_iV[j];
+						m_data.m_fingers[i].m_iV[j] = (uint32_t)swapEndian32(tmp);
+					}
+					{
+						auto& tmp = m_data.m_fingers[i].m_mag[j];
+						tmp = (int16_t)swapEndian16(tmp);
+					}
+				}
+				{
+					//const auto& tmp = swapEndian16(m_data.m_fingers[i].m_flags);
+				}
+			}
+
+			return 255+124;
+		}
+		void writeToMessage(XsMessage& msg, XsSize offset) const override
+		{
+			assert(0); //not expected to be called
+			XsMessage_setDataShort(&msg, m_data.m_snapshotCounter, offset);
+		}
+
+		XsSize sizeInMsg() const override
+		{
+			return sizeof(XsGloveSnapshot);
+		}
+	};
+
+	/*! \brief Variant containing an XsGloveDataVariant value */
+	struct XsGloveDataVariant : public Variant
+	{
+		/*! \brief Constructor, sets the dataId to \a id */
+		XsGloveDataVariant(XsDataIdentifier id) : Variant(id), m_data() {}
+		/*! \brief Constructor, sets the dataId to \a id and data value to \a val */
+		XsGloveDataVariant(XsDataIdentifier id, XsGloveData const& val) : Variant(id), m_data(val) {}
+		Variant* clone() const override
+		{
+			return new XsGloveDataVariant(dataId(), m_data);
+		}
+
+		XsGloveData m_data;			//!< The contained data
+		XsSize readFromMessage(XsMessage const& msg, XsSize offset, XsSize sz) override
+		{
+			assert(0); //not expected to be called
+			XsMessage_getDataShort(&msg, offset);
+			return sz;
+		}
+		void writeToMessage(XsMessage& msg, XsSize offset) const override
+		{
+			assert(0); //not expected to be called
+			XsMessage_setDataShort(&msg, m_data.snapshotCounter(), offset);
+		}
+
+		XsSize sizeInMsg() const override
+		{
+			return sizeof(XsGloveData);
 		}
 	};
 }
@@ -779,9 +978,9 @@ struct DataPacketPrivate : private MapType
 	DataPacketPrivate() : m_refCount(1) { ++m_created; }
 	DataPacketPrivate(DataPacketPrivate const&);
 	~DataPacketPrivate();
-	const DataPacketPrivate& operator = (const DataPacketPrivate& p);
+	DataPacketPrivate& operator = (const DataPacketPrivate& p);
 	void erase(XsDataIdentifier id);
-	void erase(MapType::const_iterator it);
+	void erase(MapType::const_iterator const& it);
 	MapType::iterator insert(XsDataIdentifier id, XsDataPacket_Private::Variant* var);
 
 	void clear();

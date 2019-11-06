@@ -46,11 +46,14 @@ namespace DeviceType {
 	static const DeviceFactory::DeviceTypeId MTI_X00				= 22;
 	static const DeviceFactory::DeviceTypeId MTIG					= 23;
 	static const DeviceFactory::DeviceTypeId MTI_7					= 24;
+	static const DeviceFactory::DeviceTypeId MTI_6X0				= 25;
 	static const DeviceFactory::DeviceTypeId MTX2					= 30;
+	static const DeviceFactory::DeviceTypeId GLOVE					= 50;
 	static const DeviceFactory::DeviceTypeId MTW2					= 80;
 	static const DeviceFactory::DeviceTypeId IMARIFOG				= 100;
 	static const DeviceFactory::DeviceTypeId IMARFSAS				= 101;
 	static const DeviceFactory::DeviceTypeId ABMCLOCKMASTER			= 200;
+	static const DeviceFactory::DeviceTypeId HILDEVICE				= 300;
 }
 
-#endif // DEVICETYPES_H
+#endif

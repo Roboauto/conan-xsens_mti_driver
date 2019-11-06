@@ -31,46 +31,14 @@
 //  
 
 #include "mtdevice.h"
-#include <xstypes/xsens_debugtools.h>
+#include "xsdef.h"
 #include <xstypes/xssensorranges.h>
-#include <xscommon/xsens_janitors.h>
-#include <xstypes/xsquaternion.h>
-#include <xstypes/xsmatrix.h>
-#include <xstypes/xsmath.h>
-#include <xstypes/xsdid.h> // for watermark checking
-#include <xstypes/xssyncsettingarray.h>
-#include <xstypes/xstime.h>
-#include <xstypes/xssyncsetting.h>
-#include <xstypes/xsdatapacket.h>
-#include "communicator.h"
-#include <xstypes/xsscrdata.h>
-#include <xstypes/xscalibrateddata.h>
-#include <xstypes/xssdidata.h>
-#include "xserrormode.h"
-#include "xsresetmethod.h"
-#include "scenariomatchpred.h"
-#include <algorithm>
-#include "mtsyncsettings.h"
 #include <xstypes/xsoutputconfigurationarray.h>
-#include <algorithm>
-
+#include <xstypes/xsvector3.h>
+#include "xsselftestresult.h"
 #include <xstypes/xsstatusflag.h>
 
 using namespace xsens;
-
-/*! \brief 'Less-than' implementation for 'XsFilterProfile'
-	Sorts on the 'type'
-*/
-bool MtDevice::CompareXsFilterProfile::operator() (XsFilterProfile const & left, XsFilterProfile const & right) const
-{
-#if 0 // Compare by string
-	std::ostringstream leftStream, rightStream;
-	leftStream << left.type() << '.' << left.version();
-	rightStream << right.type() << '.' << right.version();
-	return leftStream.str() < rightStream.str();
-#endif
-	return left.type() < right.type();
-}
 
 /*! \brief Constructs a standalone MtDevice based on \a comm
 */
@@ -103,12 +71,11 @@ bool MtDevice::messageLooksSane(const XsMessage &msg) const
 }
 
 /*! \brief Initialize the Mt device using the supplied filter profiles
-	\param filterProfiles The filter profiles
 	\returns True if successful
 */
-bool MtDevice::initialize(const xsens::SettingsFile& filterProfiles)
+bool MtDevice::initialize()
 {
-	if (!XsDeviceEx::initialize(filterProfiles))
+	if (!XsDeviceEx::initialize())
 		return false;
 
 	// we must create the data caches first so they are available even if the rest of the init fails
@@ -120,38 +87,37 @@ bool MtDevice::initialize(const xsens::SettingsFile& filterProfiles)
 	}
 
 	fetchAvailableHardwareScenarios();
-	updateScenarios();
+	MtDevice::updateFilterProfiles();
 
 	return true;
 }
 
 /*! \brief Updates the scenarios
-	\returns True if successful
 */
-bool MtDevice::updateScenarios()
+void MtDevice::updateFilterProfiles()
 {
-	const XsMtDeviceConfiguration& info = deviceConfiguration().deviceInfo(deviceId());
+	const XsMtDeviceConfiguration& info = deviceConfigurationConst().deviceInfo(deviceId());
 	if (info.m_filterProfile != 0)
 	{
 		m_hardwareFilterProfile = XsFilterProfile(info.m_filterProfile & 0xFF
-			,info.m_filterProfile >> 8
-			,m_hardwareFilterProfile.label()
-			,info.m_filterType
-			,info.m_filterMajor
-			,info.m_filterMinor);
+			, info.m_filterProfile >> 8
+			, m_hardwareFilterProfile.kind()
+			, m_hardwareFilterProfile.label()
+			, info.m_filterType
+			, info.m_filterMajor
+			, info.m_filterMinor);
 	}
 
-	for (std::vector<XsFilterProfile>::const_iterator i = m_hardwareFilterProfiles.begin(); i != m_hardwareFilterProfiles.end(); ++i)
+	for (auto i = m_hardwareFilterProfiles.begin(); i != m_hardwareFilterProfiles.end(); ++i)
 	{
-		if (i->type() == m_hardwareFilterProfile.type())
+		if (i->type() == m_hardwareFilterProfile.type() || i->label() == m_hardwareFilterProfile.label())
 		{
 			m_hardwareFilterProfile.setLabel(i->label());
+			m_hardwareFilterProfile.setKind(i->kind());
 			m_hardwareFilterProfile.setVersion(i->version());
 			break;
 		}
 	}
-
-	return true;
 }
 
 /*! \returns True if this is a motion tracker
@@ -305,12 +271,12 @@ bool MtDevice::storeAlignmentMatrix()
 double MtDevice::headingOffset() const
 {
 	XsMessage snd(XMID_ReqHeading), rcv;
-	snd.setBusId(busId());
+	snd.setBusId((uint8_t)busId());
 
 	if (!doTransaction(snd, rcv))
 		return 0;
 
-	return rcv.getDataFloat();
+	return (double)rcv.getDataFloat();
 }
 
 /*! \copybrief XsDevice::setLocationId
@@ -318,7 +284,7 @@ double MtDevice::headingOffset() const
 bool MtDevice::setLocationId(int id)
 {
 	XsMessage snd(XMID_SetLocationId, XS_LEN_LOCATIONID);
-	snd.setBusId(busId());
+	snd.setBusId((uint8_t)busId());
 	snd.setDataShort((uint16_t)id);
 
 	return doTransaction(snd);
@@ -329,7 +295,7 @@ bool MtDevice::setLocationId(int id)
 int MtDevice::locationId() const
 {
 	XsMessage snd(XMID_ReqLocationId), rcv;
-	snd.setBusId(busId());
+	snd.setBusId((uint8_t)busId());
 
 	if (!doTransaction(snd, rcv))
 		return 0;
@@ -337,19 +303,12 @@ int MtDevice::locationId() const
 	return rcv.getDataShort();
 }
 
-/*! \copybrief XsDevice::dataLength
-*/
-int MtDevice::dataLength() const
-{
-	return deviceConfiguration().deviceInfo(deviceId()).m_dataLength;
-}
-
 /*! \copybrief XsDevice::serialBaudRate
 */
 XsBaudRate MtDevice::serialBaudRate() const
 {
 	XsMessage snd(XMID_ReqBaudrate), rcv;
-	snd.setBusId(busId());
+	snd.setBusId((uint8_t)busId());
 
 	if (!doTransaction(snd, rcv))
 		return XBR_Invalid;
@@ -370,7 +329,7 @@ XsVersion MtDevice::hardwareVersion() const
 
 /*! \copybrief XsDevice::availableOnboardFilterProfiles
 */
-std::vector<XsFilterProfile> MtDevice::availableOnboardFilterProfiles() const
+XsFilterProfileArray MtDevice::availableOnboardFilterProfiles() const
 {
 	return m_hardwareFilterProfiles;
 }
@@ -378,28 +337,37 @@ std::vector<XsFilterProfile> MtDevice::availableOnboardFilterProfiles() const
 /*!	\brief Request the filter profiles headers from the hardware device and returns a vector with the found profiles.
 	the order in the output vector is the same as the order in the hardware device.
 */
-std::vector<XsFilterProfile> MtDevice::readFilterProfilesFromDevice() const
+XsFilterProfileArray MtDevice::readFilterProfilesFromDevice() const
 {
-	std::vector<XsFilterProfile> result;
+	XsFilterProfileArray result;
 
 	XsMessage snd(XMID_ReqAvailableFilterProfiles);
-	snd.setBusId(busId());
+	snd.setBusId((uint8_t)busId());
 
 	XsMessage rcv;
 	if (!doTransaction(snd, rcv))
 		return result;
 
-	uint8_t filterType = deviceConfiguration().deviceInfo(deviceId()).m_filterType;
+	const char filterType = deviceConfigurationConst().deviceInfo(deviceId()).m_filterType;
 
 	XsSize nofScenarios = rcv.getDataSize() / (1 + 1 + XS_LEN_FILTERPROFILELABEL);
 
 	result.resize(nofScenarios);
 	for (XsSize i = 0; i < nofScenarios; ++i)
 	{
-		result[i].setType(rcv.getDataByte(0 + i*(1+1+XS_LEN_FILTERPROFILELABEL)));
+		uint8_t type = rcv.getDataByte(0 + i*(1+1+XS_LEN_FILTERPROFILELABEL));
+		result[i].setType(type);
 		result[i].setVersion(rcv.getDataByte(1 + i*(1+1+XS_LEN_FILTERPROFILELABEL)));
 		result[i].setLabel((const char*) rcv.getDataBuffer(2 + i*(1+1+XS_LEN_FILTERPROFILELABEL)));
 		result[i].setFilterType(filterType);
+		XsString kind;
+		if (type == XFPK_Base)
+			kind = "base";
+		else if (type == XFPK_Additional)
+			kind = "additional";
+		else if (type == XFPK_Heading)
+			kind = "heading";
+		result[i].setKind(kind.c_str());
 	}
 	return result;
 }
@@ -410,7 +378,15 @@ void MtDevice::fetchAvailableHardwareScenarios()
 {
 	m_hardwareFilterProfiles.clear();
 	m_hardwareFilterProfiles = readFilterProfilesFromDevice();
-	std::sort(m_hardwareFilterProfiles.begin(), m_hardwareFilterProfiles.end(), CompareXsFilterProfile());
+	std::sort(m_hardwareFilterProfiles.begin(), m_hardwareFilterProfiles.end(),
+		[](XsFilterProfile const& left, XsFilterProfile const& right)
+		{
+			if (left.type() == right.type())
+				return strcmp(left.label(), right.label()) < 0;
+			else
+				return left.type() < right.type();
+		}
+		);
 }
 
 /*! \copybrief XsDevice::productCode
@@ -422,8 +398,9 @@ XsString MtDevice::productCode() const
 		return XsString();
 
 	const char* pc = (const char*) rcv.getDataBuffer();
-	std::string result(pc?pc:"", 20);
-	std::string::size_type thingy = result.find(" ");
+	assert(pc);
+	std::string result(pc?pc:"                    ", 20);
+	std::string::difference_type thingy = (std::string::difference_type) result.find(" ");
 	if (thingy < 20)
 		result.erase(result.begin() + thingy, result.end());
 	return XsString(result);
@@ -462,28 +439,66 @@ XsFilterProfile MtDevice::onboardFilterProfile() const
 */
 bool MtDevice::setOnboardFilterProfile(int profileType)
 {
-	return setOnboardFilterProfile(XsFilterProfile((uint8_t) profileType));
-}
-
-/*! \copybrief XsDevice::setOnboardFilterProfile
-*/
-bool MtDevice::setOnboardFilterProfile(const XsFilterProfile &scenario)
-{
 	if (deviceState() != XDS_Config)
 		return false;
 
-	std::vector<XsFilterProfile>::iterator item = std::find_if(m_hardwareFilterProfiles.begin(), m_hardwareFilterProfiles.end(), ScenarioMatchPred(scenario));
+	XsFilterProfileArray::iterator item = std::find_if(m_hardwareFilterProfiles.begin(), m_hardwareFilterProfiles.end(),
+		[profileType](XsFilterProfile const& p)
+	{
+		return p.type() == profileType;
+	});
 	if (item == m_hardwareFilterProfiles.end())
 		return false;
 
 	XsMessage snd(XMID_SetFilterProfile, XS_LEN_SETFILTERPROFILE);
-	snd.setBusId(busId());
-	snd.setDataShort(scenario.type());
+	snd.setBusId((uint8_t)busId());
+	snd.setDataShort((uint16_t)profileType);
 
 	if (!doTransaction(snd))
 		return false;
 
 	m_hardwareFilterProfile = *item;
+	return true;
+}
+
+/*! \copybrief XsDevice::setOnboardFilterProfile
+*/
+bool MtDevice::setOnboardFilterProfile(XsString const& profile)
+{
+	if (deviceState() != XDS_Config)
+		return false;
+
+	XsStringArray profileList(profile, "/");
+
+	XsFilterProfileArray::iterator item[2];
+	int i = 0;
+	for (auto currentProfile : profileList)
+	{
+		item[i++] = std::find_if(m_hardwareFilterProfiles.begin(), m_hardwareFilterProfiles.end(),
+			[currentProfile](XsFilterProfile const& p)
+			{
+				return currentProfile == p.label();
+			});
+		if (i == 2)
+			break;
+	}
+	if (i == 0 || item[0] == m_hardwareFilterProfiles.end())
+		return false;
+
+	XsMessage snd(XMID_SetFilterProfile, profile.size());
+	snd.setBusId((uint8_t)busId());
+	snd.setDataBuffer((const uint8_t*)profile.c_str(), profile.size());
+
+	if (!doTransaction(snd))
+		return false;
+
+	if (item[1] != m_hardwareFilterProfiles.end())
+	{
+		m_hardwareFilterProfile = *item[0];
+		m_hardwareFilterProfile.setLabel(profile.c_str());	// Use info from first item, but label can be 2 profiles
+	}
+	else
+		m_hardwareFilterProfile = *item[0];
 	return true;
 }
 
@@ -516,7 +531,7 @@ void MtDevice::writeDeviceSettingsToFile()
 bool MtDevice::setNoRotation(uint16_t duration)
 {
 	XsMessage snd(XMID_SetNoRotation, 2);
-	snd.setBusId(busId());
+	snd.setBusId((uint8_t)busId());
 	snd.setDataShort(duration);
 
 	return doTransaction(snd);
@@ -530,7 +545,7 @@ bool MtDevice::setNoRotation(uint16_t duration)
 */
 bool MtDevice::setInitialPositionLLA(const XsVector& lla)
 {
-	uint8_t bid = busId();
+	uint8_t bid = (uint8_t)busId();
 	if (bid == XS_BID_INVALID || bid == XS_BID_BROADCAST || lla.size() != 3)
 		return false;
 
@@ -552,7 +567,7 @@ XsVector MtDevice::initialPositionLLA() const
 	if (doTransaction(snd, rcv))
 	{
 		XsVector3 vec;
-		for (int i = 0; i < 3; i++)
+		for (XsSize i = 0; i < 3; i++)
 			vec[i] = rcv.getDataDouble(i * 8);
 		return vec;
 	}
@@ -594,7 +609,7 @@ XsErrorMode MtDevice::errorMode() const
 bool MtDevice::setErrorMode(XsErrorMode em)
 {
 	XsMessage snd(XMID_SetErrorMode, 2);
-	snd.setBusId(busId());
+	snd.setBusId((uint8_t)busId());
 	snd.setDataShort(em);
 	return doTransaction(snd);
 }
@@ -623,7 +638,7 @@ uint16_t MtDevice::rs485TransmissionDelay() const
 bool MtDevice::setRs485TransmissionDelay(uint16_t delay)
 {
 	XsMessage snd(XMID_SetTransmitDelay, 2);
-	snd.setBusId(busId());
+	snd.setBusId((uint8_t)busId());
 	snd.setDataShort(delay);
 
 	return doTransaction(snd);
@@ -637,7 +652,7 @@ bool MtDevice::setRs485TransmissionDelay(uint16_t delay)
 bool MtDevice::requestData()
 {
 	XsMessage snd(XMID_ReqData);
-	snd.setBusId(busId());
+	snd.setBusId((uint8_t)busId());
 
 	return sendRawMessage(snd);
 }
@@ -648,7 +663,7 @@ bool MtDevice::requestData()
 XsSelfTestResult MtDevice::runSelfTest()
 {
 	XsMessage snd(XMID_RunSelfTest, 0);
-	snd.setBusId(busId());
+	snd.setBusId((uint8_t)busId());
 	XsMessage rcv;
 	if (!doTransaction(snd, rcv, 3000))
 		return XsSelfTestResult();
@@ -663,12 +678,11 @@ bool MtDevice::storeFilterState()
 	if (deviceState() == XDS_Config)
 	{
 		XsMessage snd(XMID_StoreFilterState);
-		snd.setBusId(busId());
+		snd.setBusId((uint8_t)busId());
 
 		if (doTransaction(snd))
 			return true;
 	}
-//	m_lastResult = XRV_INVALIDOPERATION;
 	return false;
 }
 
@@ -707,3 +721,9 @@ bool MtDevice::resetLogFileReadPosition()
 }
 
 ///@} end Log files
+
+uint32_t MtDevice::supportedStatusFlags() const
+{
+	// essentially an unknown device, assume everything is supported
+	return ~(uint32_t)0;
+}

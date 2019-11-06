@@ -30,29 +30,77 @@
 //  ARBITRATORS APPOINTED IN ACCORDANCE WITH SAID RULES.
 //  
 
-#ifndef XSRESETMETHOD_H
-#define XSRESETMETHOD_H
+#ifndef XSCANDATAIDENTIFIER_H
+#define XSCANDATAIDENTIFIER_H
 
+//! \brief Max frequency values for can interface
+#define XCDI_MAX_FREQUENCY_VAL	0x07FF
+#define XCDI_MAX_FREQUENCY		((uint16_t) XCDI_MAX_FREQUENCY_VAL)
+
+//////////////////////////////////////////////////////////////////////////////////////////
 /*!	\addtogroup enums Global enumerations
 	@{
 */
 
-//AUTO namespace xscontroller {
-/*! \brief Orientation reset type. */
-enum XsResetMethod {
-	XRM_StoreAlignmentMatrix	= 0,				//!< \brief Store the current object alignment matrix to persistent memory
-	XRM_Heading					= 1,				//!< \brief Reset the heading (yaw)
-	XRM_Object					= 3,				//!< \brief Reset the attitude (roll, pitch), same as XRM_Inclination
-	XRM_Inclination				= XRM_Object,		//!< \brief Reset the inclination (roll, pitch), same as XRM_Object
-	XRM_Alignment				= 4,				//!< \brief Reset heading and attitude \details This effectively combines the XRM_Heading and XRM_Object
-	XRM_Global					= XRM_Alignment,	//!< \brief Reset the full orientation of the device \details Obsolete. Use XRM_Alignment instead.
-	XRM_DefaultHeading			= 5,				//!< \brief Revert to default behaviour for heading, undoes XRM_Heading
-	XRM_DefaultInclination		= 6,				//!< \brief Revert to default behaviour for inclination, undoes XRM_Inclination
-	XRM_DefaultAlignment		= 7,				//!< \brief Revert to default behaviour for heading and inclination, undoes any reset
-	XRM_None										//!< \brief No reset planned
+//AUTO namespace xstypes {
+/*!	\enum XsCanDataIdentifier
+	\brief Defines the data identifiers for CAN messages
+
+*/
+enum XsCanDataIdentifier
+{
+	XCDI_Invalid			= 0x00,
+
+	/* Group Information & Timestamp Messages */
+	XCDI_Error				= 0x01,
+	XCDI_Warning			= 0x02,
+
+	XCDI_SampleTime			= 0x05,	//!< Sample Time in us
+	XCDI_GroupCounter		= 0x06,
+	XCDI_UtcTime			= 0x07,
+
+	/* Group Status Messages */
+	XCDI_StatusWord 		= 0x11,
+
+	/* Group Quaternion Messages */
+	XCDI_Quaternion			= 0x21,
+	XCDI_EulerAngles		= 0x22,
+	XCDI_RotationMatrix		= 0x23,
+
+	/* Group Inertial Data Messages */
+	XCDI_DeltaV				= 0x31,	//!< DeltaV SDI data output
+	XCDI_RateOfTurn			= 0x32,
+	XCDI_DeltaQ				= 0x33,	//!< DeltaQ SDI data
+	XCDI_Acceleration		= 0x34,
+	XCDI_FreeAcceleration	= 0x35,
+
+	/* Group Magnetic Field */
+	XCDI_MagneticField		= 0x41,	//!< Magnetic field data in a.u.
+
+	/* Group Temperature & Pressure Messages */
+	XCDI_Temperature		= 0x51,	//!< Temperature
+	XCDI_BaroPressure		= 0x52,	//!< Pressure output recorded from the barometer
+
+	/* Group High-Rate Data Messages */
+	XCDI_RateOfTurnHR		= 0x61,
+	XCDI_AccelerationHR		= 0x62,
+
+	/* Group Position & Velocity Messages */
+	XCDI_LatLong			= 0x71,
+	XCDI_AltitudeEllipsoid	= 0x72,
+	XCDI_PositionEcef_X		= 0x73,
+	XCDI_PositionEcef_Y		= 0x74,
+	XCDI_PositionEcef_Z		= 0x75,
+	XCDI_Velocity			= 0x76,
+	XCDI_Latitude			= 0x77,
+	XCDI_Longitude			= 0x78,
+	XCDI_GnssSatInfo 		= 0x79,
+
+	XCDI_EndOfGroup, //Keep this entry second to last.
+	XCDI_HighestIdentifier, //Keep this entry last. Don't assign IDs with a higher value than this.
 };
 /*! @} */
-typedef enum XsResetMethod XsResetMethod;
-//AUTO }
+
+typedef enum XsCanDataIdentifier XsCanDataIdentifier;
 
 #endif

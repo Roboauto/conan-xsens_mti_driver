@@ -56,7 +56,7 @@ protected:
 	typedef bool (DeviceRedetector::*FunctionPointer)(const XsDeviceId& deviceId, XsPortInfo& portInfo, bool skipDeviceIdCheck);
 
 	//! A map filled with detect functions
-	std::map<uint32_t, FunctionPointer> m_detectFunctions;
+	std::map<XsDeviceId, FunctionPointer> m_detectFunctions;
 };
 
 #endif // DEVICEREDETECTOR_H

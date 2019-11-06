@@ -30,25 +30,64 @@
 //  ARBITRATORS APPOINTED IN ACCORDANCE WITH SAID RULES.
 //  
 
-#ifndef XSSYNCSETTINGLIST_H
-#define XSSYNCSETTINGLIST_H
+#ifndef XSMTI6X0DEVICE_H
+#define XSMTI6X0DEVICE_H
 
-#include "xssyncsettingarray.h"
-#define XsSyncSettingList XsSyncSettingArray
+#include "mtibasedevice.h"
 
-#ifndef __cplusplus
+class MtContainer;
 
-#define XSSYNCSETTINGLIST_INITIALIZER		XSSYNCSETTINGSARRAY_INITIALIZER
+/*! \class Mti6X0Device
+	\brief The MTi device used for the 6X0-series
+*/
+class Mti6X0Device : public MtiBaseDeviceEx
+{
+public:
+	//! \copybrief MtiXDevice::constructStandalone
+	static XsDevice* constructStandalone(Communicator* comm)
+	{
+		return new Mti6X0Device(comm);
+	}
 
-#define XsSyncSettingList_assign(thisPtr, size, src)	XsArray_assign(thisPtr, size, src)
-#define XsSyncSettingList_construct(thisPtr, size, src)	XsSyncSettingArray_construct(thisPtr, size, src)
-#define XsSyncSettingList_destruct(thisPtr)				XsArray_destruct(thisPtr)
-#define XsSyncSettingList_copy(thisPtr, copy)			XsArray_copy(copy, thisPtr)
-#define XsSyncSettingList_append(thisPtr, other)		XsArray_append(thisPtr, other)
-#define XsSyncSettingList_popFront(thisPtr, count)		XsArray_erase(thisPtr, 0, count)
-#define XsSyncSettingList_popBack(thisPtr, count)		XsArray_erase(thisPtr, (XsSize)-1, count)
-#define XsSyncSettingList_swap(a, b)					XsArray_swap(a, b)
-#define XsSyncSettingList_erase(thisPtr, index, count)	XsArray_erase(thisPtr, index, count)
+	explicit Mti6X0Device(Communicator* comm);
 
+	//! \brief An empty constructor for a master device
+	explicit Mti6X0Device(MtContainer *master) : MtiBaseDeviceEx(master) {}
+	virtual ~Mti6X0Device();
+
+	XsStringOutputTypeArray supportedStringOutputTypes() const override;
+	bool setStringOutputMode(uint32_t type, uint16_t frequency);
+	uint32_t supportedStatusFlags() const override;
+	XsCanOutputConfigurationArray canOutputConfiguration() const override;
+	bool setCanOutputConfiguration(XsCanOutputConfigurationArray& config) override;
+
+	XsIntArray portConfiguration() const override;
+	bool setPortConfiguration(XsIntArray& config) override;
+
+	uint32_t canConfiguration() const override;
+	bool setCanConfiguration(uint32_t config) override;
+
+protected:
+	uint8_t syncLine(const XsSyncSetting& setting) const override;
+	bool hasIccSupport() const override;
+
+	MtiBaseDevice::BaseFrequencyResult getBaseFrequencyInternal(XsDataIdentifier dataType = XDI_None) const override;
+};
+
+#ifndef XDA_PRIVATE_BUILD
+/*! \class Mti6X0DeviceEx
+	\brief The internal base class for MTi-6X0 series devices
+*/
+struct Mti6X0DeviceEx : public Mti6X0Device
+{
+	//! \copybrief Mti6X0Device::Mti6X0Device
+	explicit Mti6X0DeviceEx(Communicator* comm) : Mti6X0Device(comm) {};
+
+	//! \copybrief Mti6X0Device::Mti6X0Device
+	explicit Mti6X0DeviceEx(MtContainer *master) : Mti6X0Device(master) {};
+};
+#else
+#include "mtix00deviceex.h"
 #endif
+
 #endif

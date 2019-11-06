@@ -47,6 +47,11 @@ _Pragma("pack(push, 1)")
 #include <cstring>
 #endif
 
+// The valid flag from the PVT package has the following fields, x is the valid flag.
+#define GNSS_PVT_VALID_DATE(x)		(0x01 & x)	// UTC date is valid
+#define GNSS_PVT_VALID_TIME(x)		(0x02 & x)	// UTC time of day is valid
+#define GNSS_PVT_VALID_RESOLVE(x)	(0x04 & x)	// UTC time of day has been fully resolved
+
 /*! \brief A container for GNSS Position Velocity and Time data
 */
 struct XsRawGnssPvtData

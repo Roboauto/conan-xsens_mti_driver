@@ -59,7 +59,7 @@ XsArrayDescriptor const g_xsQuaternionArrayDescriptor = {
 	XSEXPCASTRAWCOPY XsArray_rawCopy
 };
 
-/*! \copydoc XsArray_construct
+/*! \copydoc XsArray_constructDerived
 	\note Specialization for XsQuaternionArray
 */
 void XsQuaternionArray_construct(XsQuaternionArray* thisPtr, XsSize count, XsQuaternion const* src)

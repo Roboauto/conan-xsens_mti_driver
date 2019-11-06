@@ -48,12 +48,13 @@ enum SyncLineGmt
 {
 	XSLGMT_ClockIn		= 0,	//!< External clock sync \ref XSL_ClockIn
 	XSLGMT_GnssClockIn	= 1,	//!< GNSS clock sync \ref XSL_GnssClockIn
-	XSLGMT_In			= 2,	//!< Sync in 1 \ref XSL_In1
+	XSLGMT_In1			= 2,	//!< Sync in 1 \ref XSL_In1
 	XSLGMT_BiIn			= 3,	//!< Bidirectional sync line, configured as input \ref XSL_Bi1In
 	XSLGMT_BiOut		= 4,	//!< Bidirectional sync line, configured as output \ref XSL_Bi1Out
 	XSLGMT_ReqData		= 6,	//!< Serial data sync option, use XMID_ReqData message id for this \ref XSL_ReqData
 	XSLGMT_Out			= 7,	//!< Sync out 1 \ref XSL_Out1
 	XSLGMT_Gnss1Pps		= 8,	//!< GNSS 1PPS pulse sync in line \ref XSL_Gnss1Pps
+	XSLGMT_In2			= 9,	//!< Sync in 2 \ref XSL_In2
 
 	XSLGMT_Invalid
 };

@@ -265,9 +265,9 @@ public:
 
 	/*!	\returns The maximum set of messages, from the beginning of a file, which must contain a Configuration message
 		\note SerialCommunicator & MTi: 5 (GotoConfig, ReqDeviceId, GotoConfig, Initbus, ReqConfiguration)
-		\note NetworkCommunicator & BodyPack: 7 (ReqDeviceId, RequestControl, SetDataPort, GotoConfig [Communicator & XsDevice], Initbus, ReqConfiguration)
+		\note BodyPack requires more because we also may have some other meta-data in the file, but base is: 7 (ReqDeviceId, RequestControl, SetDataPort, GotoConfig [Communicator & XsDevice], Initbus, ReqConfiguration)
 	*/
-	static int configurationMessageSearchLimit() { return 8; }
+	static int configurationMessageSearchLimit() { return 16; }
 
 	virtual void setCredentials(XsString const& id, XsString const& key);
 

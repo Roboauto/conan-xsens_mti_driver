@@ -108,6 +108,8 @@ enum XsDataIdentifier
 	XDI_RetransmissionFlag		= 0x0001,	//!< Bit indicating if the snapshot if from a retransmission
 	XDI_AwindaSnapshot 			= 0xC810,	//!< Awinda type snapshot
 	XDI_FullSnapshot 			= 0xC820,	//!< Full snapshot
+	XDI_GloveSnapshot			= 0xC830, 	//!< Glove Snapshot
+	XDI_GloveData				= 0xC840, 	//!< Glove Data
 
 	XDI_GnssGroup				= 0x7000,	//!< Group for Gnss related outputs
 	XDI_GnssPvtData				= 0x7010,	//!< Gnss position, velocity and time data

@@ -189,9 +189,13 @@ void XsVector_normalize(XsVector* thisPtr)
 //! \relates XsVector \brief Sets all elements of the %XsVector to 0
 void XsVector_setZero(XsVector* thisPtr)
 {
+#if XSREAL_ALLOWS_MEMCPY
+	memset(thisPtr->m_data, 0, sizeof(XsReal)*thisPtr->m_size);
+#else
 	XsSize i;
 	for (i = 0; i < thisPtr->m_size; ++i)
 		thisPtr->m_data[i] = XsMath_zero;
+#endif
 }
 
 //! \relates XsVector \brief Sets all elements of the %XsVector to \a value

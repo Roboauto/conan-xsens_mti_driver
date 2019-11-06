@@ -31,21 +31,19 @@
 //  
 
 #include "mtibasedevice.h"
-#include <xstypes/xssensorranges.h>
-#include <xstypes/xsens_generic_matrix.h>
-#include <xscommon/aliascast.h>
-#include <xstypes/xsdatapacket.h>
-#include "replyobject.h"
-#include "communicator.h"
-#include "scenariomatchpred.h"
-#include <xstypes/xssyncsetting.h>
+#include "xsdef.h"
 #include "synclinemk4.h"
 #include "synclinegmt.h"
-#include <xstypes/xsoutputconfigurationlist.h>
-#include <set>
+#include <xstypes/xsoutputconfigurationarray.h>
 #include <xstypes/xssyncsettingarray.h>
 #include <xstypes/xsportinfo.h>
 #include "xsicccommand.h"
+#include <xstypes/xsmatrix.h>
+#include "xsiccrepmotionresult.h"
+#include <xstypes/xsquaternion.h>
+#include <xstypes/xsvector.h>
+#include <set>
+#include <xstypes/xsstatusflag.h>
 
 using namespace xsens;
 
@@ -54,7 +52,6 @@ using namespace xsens;
 */
 MtiBaseDevice::MtiBaseDevice(Communicator* comm)
 	: MtDeviceEx(comm)
-	, m_representativeMotion(false)
 {
 }
 
@@ -63,7 +60,6 @@ MtiBaseDevice::MtiBaseDevice(Communicator* comm)
 */
 MtiBaseDevice::MtiBaseDevice(MtContainer *master)
 	: MtDeviceEx(master, XsDeviceId())
-	, m_representativeMotion(false)
 {
 }
 
@@ -107,7 +103,8 @@ XsOutputConfigurationArray MtiBaseDevice::outputConfiguration() const
 */
 bool MtiBaseDevice::setOutputConfiguration(XsOutputConfigurationArray& config)
 {
-	setStringOutputMode(0, 0, 0);
+	if (!deviceId().isMti6X0())
+		setStringOutputMode(0, 0, 0);
 
 	if (!MtDeviceEx::setOutputConfiguration(config))
 		return false;
@@ -489,20 +486,36 @@ bool MtiBaseDevice::resetRemovesPort() const
 */
 XsSyncLine MtiBaseDevice::syncSettingsLine(const uint8_t* buff, XsSize offset) const
 {
-	return	xsl4ToXsl((SyncLineMk4) buff[offset + 1]);
+	if (deviceId().isMtMark4() || deviceId().isMtMark5())
+		return	xsl4ToXsl((SyncLineMk4) buff[offset + 1]);
+	else
+		return	xslgmtToXsl((SyncLineGmt) buff[offset + 1]);
 }
 
 /*! \brief Returns the sync line for a generic mti device
 */
 uint8_t MtiBaseDevice::syncLine(const XsSyncSetting& setting) const
 {
-	SyncLineMk4 mk4Line = xslToXsl4(setting.m_line);
-	assert(mk4Line != XSL4_Invalid);
-	if (mk4Line == XSL4_ClockIn || mk4Line == XSL4_GnssClockIn)
+	if (deviceId().isMtMark4() || deviceId().isMtMark5())
 	{
-		assert(setting.m_function == XSF_ClockBiasEstimation);
+		SyncLineMk4 mk4Line = xslToXsl4(setting.m_line);
+		assert(mk4Line != XSL4_Invalid);
+		if (mk4Line == XSL4_ClockIn || mk4Line == XSL4_GnssClockIn)
+		{
+			assert(setting.m_function == XSF_ClockBiasEstimation);
+		}
+		return static_cast<uint8_t>(mk4Line);
 	}
-	return static_cast<uint8_t>(mk4Line);
+	else
+	{
+		SyncLineGmt gmtLine = xslToXslgmt(setting.m_line);
+		assert(gmtLine != XSLGMT_Invalid);
+		if (gmtLine == XSLGMT_ClockIn)
+		{
+			assert(setting.m_function == XSF_SampleAndSend);
+		}
+		return static_cast<uint8_t>(gmtLine);
+	}
 }
 
 bool MtiBaseDevice::messageLooksSane(const XsMessage &msg) const
@@ -608,3 +621,10 @@ bool MtiBaseDevice::hasIccSupport() const
 	return (firmwareVersion() >= XsVersion(1, 5, 0));
 }
 
+void MtiBaseDevice::fetchAvailableHardwareScenarios()
+{
+	if (deviceId().isImu())						// If we are a 100 type device,
+		m_hardwareFilterProfiles.clear();				// there are no filter profiles in the firmware.
+	else												// For other device types,
+		MtDeviceEx::fetchAvailableHardwareScenarios();	// fetch the scenarios.
+}

@@ -47,9 +47,11 @@ namespace Synchronization
 	XsSyncSettingArray supportedSyncSettingsForMtx2Device();
 	XsSyncSettingArray supportedSyncSettingsForMtiDevice();
 	XsSyncSettingArray supportedSyncSettingsForMti7Device();
+	XsSyncSettingArray supportedSyncSettingsForMti670Device();
 	XsSyncSettingArray supportedSyncSettingsForMtigDevice();
 	XsSyncSettingArray supportedSyncSettingsForMark5MtigX10Device();
 	XsSyncSettingArray supportedSyncSettingsForMtDevice();
+	XsSyncSettingArray supportedSyncSettingsForMt6x0Device();
 	XsSyncSettingArray supportedSyncSettingsForGnssDevice();
 	XsSyncSettingArray supportedSyncSettingsForAwindaBaseStation();
 	XsSyncSettingArray supportedSyncSettingsForMtiXDevice();

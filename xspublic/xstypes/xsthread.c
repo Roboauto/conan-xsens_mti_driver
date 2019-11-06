@@ -72,15 +72,37 @@ void XSTYPES_DLL_API xsNameThisThread(const char* threadName)
 	}
 }
 #else
+#include <string.h>
+#ifdef __APPLE__
+inline static int pthread_setname_np2 (pthread_t __target_thread, const char *__name)
+{
+    (void) __target_thread;
+    return pthread_setname_np(__name);
+}
+#else
+/* Set thread name visible in the kernel and its interfaces.  */
+extern int pthread_setname_np (pthread_t __target_thread, const char *__name);
+
+inline static int pthread_setname_np2 (pthread_t __target_thread, const char *__name)
+{
+    return pthread_setname_np(__target_thread, __name);
+}
+
+#endif
+
 /*! \brief Set the name of the current thread to \a threadName
 	\note Not implemented in POSIX
 */
 void XSTYPES_DLL_API xsNameThisThread(const char* threadName)
 {
-	// no implementation for this in POSIX -- pthread_key_t should be known.
-	// adding this function does remove some
-	// checking from xs4 though.
-	(void)threadName;
+	if (pthread_setname_np2(xsGetCurrentThreadId(), threadName) == ERANGE)
+	{
+		char dup[16];
+		strncpy(dup, threadName, 11);
+		strncpy(dup+11, threadName + strlen(threadName)-4, 4);
+		dup[15] = 0;
+		pthread_setname_np2(xsGetCurrentThreadId(), dup);
+	}
 }
 
 pthread_t XSTYPES_DLL_API xsStartThread(void *(func)(void *), void *param, void *pid) {

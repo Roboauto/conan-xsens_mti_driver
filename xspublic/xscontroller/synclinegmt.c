@@ -44,11 +44,12 @@ XsSyncLine xslgmtToXsl(SyncLineGmt mk4Line)
 	case XSLGMT_ClockIn:		return XSL_ClockIn;
 	case XSLGMT_GnssClockIn:	return XSL_GnssClockIn;
 	case XSLGMT_ReqData:		return XSL_ReqData;
-	case XSLGMT_In:				return XSL_In1;
+	case XSLGMT_In1:			return XSL_In1;
 	case XSLGMT_Out:			return XSL_Out1;
 	case XSLGMT_BiIn:			return XSL_Bi1In;
 	case XSLGMT_BiOut:			return XSL_Bi1Out;
 	case XSLGMT_Gnss1Pps:		return XSL_Gnss1Pps;
+	case XSLGMT_In2:			return XSL_In2;
 	default:					return XSL_Invalid;
 	}
 }
@@ -60,12 +61,13 @@ SyncLineGmt xslToXslgmt(XsSyncLine line)
 	{
 	case XSL_ClockIn:			return XSLGMT_ClockIn;
 	case XSL_GnssClockIn:		return XSLGMT_GnssClockIn;
-	case XSL_In1:				return XSLGMT_In;
+	case XSL_In1:				return XSLGMT_In1;
 	case XSL_Out1:				return XSLGMT_Out;
 	case XSL_ReqData:			return XSLGMT_ReqData;
 	case XSL_Bi1In:				return XSLGMT_BiIn;
 	case XSL_Bi1Out:			return XSLGMT_BiOut;
 	case XSL_Gnss1Pps:			return XSLGMT_Gnss1Pps;
+	case XSL_In2:				return XSLGMT_In2;
 	default:					return XSLGMT_Invalid;
 	}
 }

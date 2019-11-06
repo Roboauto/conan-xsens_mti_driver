@@ -30,39 +30,19 @@
 //  ARBITRATORS APPOINTED IN ACCORDANCE WITH SAID RULES.
 //  
 
-#include "xsfilterprofile.h"
-#include <xstypes/xsstring.h>
-#include <stdio.h>
+#ifndef XSPROTOCOL_H
+#define XSPROTOCOL_H
 
-/*! \class XsFilterProfile
-	\brief Contains information about an available filter profile
-*/
-/*! \addtogroup cinterface C Interface
+/*!	\addtogroup enums Global enumerations
 	@{
 */
-
-/*! \brief Converts filter profile version and type information to string */
-void XsFilterProfile_toString(XsFilterProfile* thisPtr, XsString *out)
-{
-	char outData[3+1+3+1+XS_LEN_FILTERPROFILELABEL_TERM];
-	sprintf(outData, "%d.%d %s", thisPtr->m_type, thisPtr->m_version, thisPtr->m_label);
-	XsString_assignCharArray(out, outData);
-}
-
-/*! \brief Checks if the filter profile is empty */
-int XsFilterProfile_empty(XsFilterProfile* thisPtr)
-{
-	return (thisPtr->m_type == 0);
-}
-
-/*! \brief Swap the contents of \a a with \a b
-*/
-void XsFilterProfile_swap(XsFilterProfile* a, XsFilterProfile* b)
-{
-	XsFilterProfile tmp;
-	memcpy(&tmp, a, sizeof(XsFilterProfile));
-	memcpy(a, b, sizeof(XsFilterProfile));
-	memcpy(b, &tmp, sizeof(XsFilterProfile));
-}
-
+//! Protocol types, used for MTi6x0 devices.
+enum XsProtocol {
+	XP_None				= 0,	//!< None
+	XP_Xbus				= 1,	//!< The Xsens Xbus protocol
+	XP_Nmea				= 5,	//!< The NMEA protocol
+};
 /*! @} */
+typedef enum XsProtocol XsProtocol;
+
+#endif

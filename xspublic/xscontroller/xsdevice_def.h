@@ -33,45 +33,24 @@
 #ifndef XSDEVICE_DEF_H
 #define XSDEVICE_DEF_H
 
-#include <xscommon/xsens_nonintrusive_shared_pointer.h>
-#include <xstypes/xsdeviceid.h>
-#include <xstypes/xstimestamp.h>
 #include <xstypes/xssyncrole.h>
 #include <xstypes/xsversion.h>
-#include <xstypes/xsbaud.h>
-#include <xstypes/xsresultvalue.h>
-#include <xstypes/xscontrolline.h>
-#include <xstypes/xsoutputconfiguration.h>
-#include <xstypes/xsxbusmessageid.h>
-#include <xstypes/xsfilepos.h>
-#include <xstypes/xsmatrix3x3.h>
-#include <xstypes/xsvector.h>
-#include <atomic>
 #include "packetstamper.h"
-#include "xsdef.h"
-#include "xsdevicestate.h"
 #include "xsdeviceconfiguration.h"
 #include "xserrormode.h"
-#include "xsresetmethod.h"
+#include <xstypes/xsresetmethod.h>
 #include "callbackmanagerxda.h"
-#include "xsfilterprofilearray.h"
-#include "xsprotocoltype.h"
-#include "xsoption.h"
+#include <xstypes/xsoption.h>
 #include "xsrejectreason.h"
 #include "communicator.h"
 #include "xsalignmentframe.h"
 #include "xsaccesscontrolmode.h"
 #include "datapacketcache.h"
-#include "xsdeviceoptionflag.h"
+#include <xstypes/xsdeviceoptionflag.h>
 #include "lastresultmanager.h"
-#include "xsoperationalmode.h"
-#include "xsicccommand.h"
-#include "xsiccrepmotionresult.h"
-#include "xsdeviceparameter.h"
 #include "xsgnssplatform.h"
-#include <deque>
-#include <memory> // for std::unique_ptr
-#include <string>
+#include <functional>
+#include "xsoperationalmode.h"
 
 class XSNOEXPORT MtContainer;
 class XSNOEXPORT DataLogger;
@@ -88,46 +67,58 @@ struct XsScrData;
 struct XsCalibratedData;
 struct XsTimeInfo;
 struct XsOutputConfigurationArray;
+struct XsCanOutputConfigurationArray;
+struct XsIntArray;
 struct XsMatrix3x3;
 struct XsDeviceIdArray;
 struct XsDataPacket;
 struct XsMessage;
 struct XsSyncSettingArray;
+struct XsMatrix;
+struct XsVector;
+struct XsStringArray;
+struct XsQuaternion;
+struct XsFilterProfileArray;
+struct XsOutputConfiguration;
+struct XsStringOutputTypeArray;
 //AUTO+chdr struct XsException;
 //AUTO }
 
 //AUTO namespace xscontroller {
-struct XsFilterProfile;
 struct XsCallbackPlainC;
 struct XsSelfTestResult;
+struct XsDeviceParameter;
+struct XsIccRepMotionResult;
 //AUTO }
 
 #define DebugFileType FILE	// required for autogenerate to correctly parse this
 
 //AUTO namespace xstypes {
+struct XsFilterProfile;
 //AUTO enum XsBaud;
 //AUTO enum XsResultValue;
 //AUTO enum XsSyncRole;
 //AUTO struct XsIntArray;
 //AUTO struct XsOutputConfigurationArray;
+//AUTO struct XsCanOutputConfigurationArray;
 //AUTO struct XsSyncSettingArray;
 //AUTO enum XsXbusMessageId;
 //AUTO enum XsFilePos;
+//AUTO struct XsFilterProfileArray;
+//AUTO enum XsDeviceOptionFlag;
+//AUTO enum XsResetMethod;
+//AUTO enum XsOption;
 //AUTO }
 
 //AUTO namespace xscontroller {
 //AUTO struct XsDevicePtrArray;
 //AUTO enum XsDeviceState;
-//AUTO enum XsResetMethod;
 //AUTO enum XsErrorMode;
-//AUTO struct XsFilterProfileArray;
 //AUTO struct XsDeviceConfiguration;
 //AUTO enum XsProtocolType;
-//AUTO enum XsOption;
 //AUTO enum XsRejectReason;
 //AUTO enum XsAlignmentFrame;
 //AUTO enum XsOperationalMode;
-//AUTO enum XsDeviceOptionFlag;
 //AUTO enum XsAccessControlMode;
 //AUTO struct XsDeviceParameter;
 //AUTO enum XsGnssPlatform;
@@ -206,8 +197,9 @@ public:
 	bool operator == (XsDeviceId devId) const
 		{ return m_deviceId.toInt() == devId.toInt(); }
 
-	virtual XsDeviceConfiguration deviceConfiguration() const;
-	virtual XsDeviceConfiguration XSNOEXPORT &deviceConfiguration();
+	XsDeviceConfiguration deviceConfiguration() const;
+	XsDeviceConfiguration& XSNOEXPORT deviceConfigurationRef();
+	virtual XsDeviceConfiguration const& XSNOEXPORT deviceConfigurationConst() const;
 
 	//! \internal
 	XSNOEXPORT template <typename T> T* toType()
@@ -259,6 +251,9 @@ public:
 
 	virtual bool setSerialBaudRate(XsBaudRate baudrate);
 
+	virtual XsIntArray portConfiguration() const;
+	virtual bool setPortConfiguration(XsIntArray& config);
+
 	virtual bool isMotionTracker() const;
 
 	virtual XsOperationalMode operationalMode() const;
@@ -274,6 +269,10 @@ public:
 	virtual XsOutputConfigurationArray processedOutputConfiguration() const;
 	virtual bool setOutputConfiguration(XsOutputConfigurationArray& config);
 	virtual bool isInStringOutputMode() const;
+	virtual XsCanOutputConfigurationArray canOutputConfiguration() const;
+	virtual bool setCanOutputConfiguration(XsCanOutputConfigurationArray& config);
+	virtual uint32_t canConfiguration() const;
+	virtual bool setCanConfiguration(uint32_t config);
 
 	virtual bool usesLegacyDeviceMode() const;
 
@@ -282,6 +281,7 @@ public:
 	virtual uint16_t stringSkipFactor() const;
 
 	virtual bool setStringOutputMode(uint16_t type, uint16_t period, uint16_t skipFactor);
+	virtual XsStringOutputTypeArray supportedStringOutputTypes() const;
 
 	virtual int dataLength() const;
 
@@ -400,11 +400,13 @@ public:
 
 	virtual XsFilterProfile xdaFilterProfile() const;
 	virtual bool setXdaFilterProfile(int profileType);
+	virtual bool setXdaFilterProfile(XsString const& profileType);
 	virtual XsFilterProfile onboardFilterProfile() const;
 	virtual bool setOnboardFilterProfile(int profileType);
-	virtual bool replaceFilterProfile(const XsFilterProfile& profileCurrent, const XsFilterProfile& profileNew);
-	virtual std::vector<XsFilterProfile> availableOnboardFilterProfiles() const;
-	virtual std::vector<XsFilterProfile> availableXdaFilterProfiles() const;
+	virtual bool setOnboardFilterProfile(XsString const& profileType);
+	virtual bool replaceFilterProfile(XsFilterProfile const& profileCurrent, XsFilterProfile const& profileNew);
+	virtual XsFilterProfileArray availableOnboardFilterProfiles() const;
+	virtual XsFilterProfileArray availableXdaFilterProfiles() const;
 	virtual double accelerometerRange() const;
 	virtual double gyroscopeRange() const;
 	virtual bool setNoRotation(uint16_t duration);
@@ -438,9 +440,6 @@ public:
 	virtual bool setAlignmentRotationQuaternion(XsAlignmentFrame frame, const XsQuaternion& quat);
 	virtual XsQuaternion alignmentRotationQuaternion(XsAlignmentFrame frame) const;
 
-	// MTi1
-	virtual XsByteArray componentsInformation() const;
-
 	//! \returns The device mutex.
 	xsens::GuardedMutex* mutex() const { return &m_deviceMutex; }
 
@@ -464,6 +463,8 @@ public:
 	XSNOEXPORT void setSkipEmtsReadOnInit(bool skip);
 
 	XSNOEXPORT virtual bool readEmtsAndDeviceConfiguration();
+
+	virtual uint32_t supportedStatusFlags() const;
 
 protected:
 	virtual XsDevice const* firstChild() const;
@@ -546,6 +547,7 @@ protected:
 public:
 	XSNOEXPORT virtual void onMessageSent(const XsMessage &message);
 	XSNOEXPORT virtual void onMessageReceived(const XsMessage &message);
+	XSNOEXPORT virtual void onMessageDetected(XsProtocolType type, const XsByteArray &rawMessage);
 
 	XSNOEXPORT virtual void onSessionRestarted();
 	XSNOEXPORT virtual void onConnectionLost();
@@ -596,6 +598,7 @@ protected:
 	static bool checkDataEnabled(XsDataIdentifier dataType, XsOutputConfigurationArray const & configurations);
 	virtual bool shouldDataMsgBeRecorded(const XsMessage &msg) const;
 	virtual bool shouldDoRecordedCallback(XsDataPacket const& packet) const;
+	virtual bool interpolateMissingData(XsDataPacket const & pack, XsDataPacket const & prev, std::function<void (XsDataPacket*)> packetHandler);
 
 	//! \brief A data cache
 	DataPacketCache m_dataCache;

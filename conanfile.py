@@ -4,7 +4,7 @@ import os
 
 class XSensMTIConan(ConanFile):
     name = "xsens_mti"
-    version = "2019.0.1.0"
+    version = "2019.2.0"
     settings = "os", "compiler", "build_type", "arch"
     generators = "cmake"
     

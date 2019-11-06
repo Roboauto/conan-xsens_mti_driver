@@ -30,25 +30,19 @@
 //  ARBITRATORS APPOINTED IN ACCORDANCE WITH SAID RULES.
 //  
 
-#ifndef XSFILTERPROFILELIST_H
-#define XSFILTERPROFILELIST_H
+#ifndef XSFILTERPROFILEKIND_H
+#define XSFILTERPROFILEKIND_H
 
-#include "xsfilterprofilearray.h"
-#define XsFilterProfileList XsFilterProfileArray
+/*! \brief Filter Profile Kinds */
+enum XsFilterProfileKind
+{
+	XFPK_Unknown		= 0,		//!< Unknown profile kind
+	XFPK_Base			= 195,		//!< Indicates a base profile
+	XFPK_Additional		= 196,		//!< Indicates an additional profile
+	XFPK_Heading		= 197		//!< Indicates a heading profile
+};
 
-#ifndef __cplusplus
-
-#define XSFILTERPROFILELIST_INITIALIZER		XSFILTERPROFILEARRAY_INITIALIZER
-
-#define XsFilterProfileList_assign(thisPtr, size, src)		XsArray_assign(thisPtr, size, src)
-#define XsFilterProfileList_construct(thisPtr, size, src)	XsFilterProfileArray_construct(thisPtr, size, src)
-#define XsFilterProfileList_destruct(thisPtr)				XsArray_destruct(thisPtr)
-#define XsFilterProfileList_copy(thisPtr, copy)				XsArray_copy(copy, thisPtr)
-#define XsFilterProfileList_append(thisPtr, other)			XsArray_append(thisPtr, other)
-#define XsFilterProfileList_popFront(thisPtr, count)		XsArray_erase(thisPtr, 0, count)
-#define XsFilterProfileList_popBack(thisPtr, count)			XsArray_erase(thisPtr, (XsSize)-1, count)
-#define XsFilterProfileList_swap(a, b)						XsArray_swap(a, b)
-#define XsFilterProfileList_erase(thisPtr, index, count)	XsArray_erase(thisPtr, index, count)
+typedef enum XsFilterProfileKind XsFilterProfileKind;
 
 #endif
-#endif
+

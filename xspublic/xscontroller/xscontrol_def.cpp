@@ -33,9 +33,9 @@
 #include "xscontrol_def.h"
 #include "xdacommunicatorfactory.h"
 #include <xstypes/xsportinfo.h>
-#include <xstypes/xsportinfolist.h>
+#include <xstypes/xsportinfoarray.h>
 #include "xsdeviceconfiguration.h"
-#include "xsfilterprofile.h"
+#include <xstypes/xsfilterprofile.h>
 #include <xstypes/xsdatapacket.h>
 
 #include "proxycommunicator.h"
@@ -552,7 +552,7 @@ bool XsControl::isDeviceWireless(const XsDeviceId& deviceId) const
 */
 XsDevice* XsControl::addMasterDevice(Communicator* communicator)
 {
-	XsDevice* result = 0;
+	XsDevice* result = nullptr;
 	XsDevice* dev = m_deviceFactory->createMasterDevice(communicator);
 	if (dev != nullptr)
 	{
@@ -916,6 +916,11 @@ XsDevicePtrArray XsControl::mainDevices() const
 	return rv;
 }
 
+/*! \brief Returns the broadcast device
+	\details The broadcast device can be used to apply an operation to all connected devices at once (if
+	they support it)
+	\returns An XsDevice pointer representing the broadcast device
+*/
  XsDevice* XsControl::broadcast() const
 {
 	return m_broadcaster;

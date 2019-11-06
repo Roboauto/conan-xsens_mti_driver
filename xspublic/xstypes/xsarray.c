@@ -49,6 +49,16 @@
 #define elemAt(b, i)				elemAtX(b, i, thisArray)
 /*! \endcond */
 
+#ifdef DOXYGEN
+/*! \brief Initializes the XsArray-derived object with space for \a count items and copies them from \a src
+	\details This function initializes the object reserving \a count items in the buffer. \a count may
+	be 0. If \a src is not 0, \a count items from \a src will be copied.
+	\param count The number of items to reserve space for. When \a src is not NULL, thisArray is also the number of items copied from \a src
+	\param src A pointer to an array of objects to copy, may be NULL, ignored when \a count is 0
+*/
+void XsArray_constructDerived(void* thisPtr, XsSize count, void const* src);
+#endif
+
 /*! \relates XsArray
 	\brief Initializes the XsArray with space for \a count items and copies them from \a src
 	\details This function initializes the object reserving \a count items in the buffer. \a count may
@@ -246,6 +256,9 @@ void XsArray_reserve(void* thisPtr, XsSize count)
 
 	// init to size
 	*((void**) &tmp.m_data) = malloc(tmp.m_reserved*elemSize(thisArray));
+	assert(tmp.m_data);
+	if (!tmp.m_data)
+		return;
 	XsArray_incAllocCount();
 
 	if (thisArray->m_descriptor->itemConstruct)
@@ -338,7 +351,7 @@ void XsArray_insert(void* thisPtr, XsSize index, XsSize count, void const* src)
 {
 	XsSize s;
 	XsArray* thisArray = (XsArray*) thisPtr;
-	int i,d = (int) count;
+	XsSize i,d = count;
 	if (thisArray->m_size + count > thisArray->m_reserved)
 		XsArray_reserve(thisArray, ((thisArray->m_size + count)*3)/2);		// we reserve 50% more space here to handle multiple sequential insertions efficiently
 
@@ -347,7 +360,7 @@ void XsArray_insert(void* thisPtr, XsSize index, XsSize count, void const* src)
 		index = thisArray->m_size;
 
 	// move items to the back by swapping
-	for (i = ((int)thisArray->m_size)-1; i >= (int) index; --i)
+	for (i = thisArray->m_size-1; i >= index && i < thisArray->m_size; --i)
 		thisArray->m_descriptor->itemSwap(elemAt(thisArray->m_data, i), elemAt(thisArray->m_data, i+d));
 
 	// copy items to the array
@@ -698,7 +711,7 @@ void XsArray_reverse(void* thisPtr)
 	XsArray* thisArray = (XsArray*) thisPtr;
 	half = thisArray->m_size >> 1;
 	for (i = 0; i < half; ++i)
-		thisArray->m_descriptor->itemSwap(elemAt(thisArray->m_data, i), elemAt(thisArray->m_data, thisArray->m_size-1-i));
+		thisArray->m_descriptor->itemSwap(elemAt(thisArray->m_data, i), elemAt(thisArray->m_data, (thisArray->m_size-1)-i));
 }
 
 /*! @} */

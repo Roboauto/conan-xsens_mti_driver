@@ -30,54 +30,58 @@
 //  ARBITRATORS APPOINTED IN ACCORDANCE WITH SAID RULES.
 //  
 
-#include "xsens_math_throw.h"
+#include "xsglovedata.h"
 
-#ifndef __STDC_VERSION__
-#define __STDC_VERSION__	0
-#endif
-
-#if __STDC_VERSION__ >= 199901L
-#include <fenv.h>
-#endif
-
-extern "C" {
-
-// please note that this will never be called in full release builds!
-void xsensMathThrowBreakFunc()
-{
-	// volatile to prevent the function being optimized away
-	volatile int putMathBreakPointHere = 0;
-	(void)putMathBreakPointHere;
-}
-
-/*! \brief Enable floating point exceptions
-
-  On windows, this requires /fp:except for proper use.
-  It also needs implementation and a bit of testing.
+/*! \class XsGloveData
+	\brief Container for Glove data.
 */
-void XsDebugTools_enableFloatingPointExceptions()
-{
-#ifdef _MSC_VER
-//	_clearfp(); // always call _clearfp before enabling/unmasking a FPU exception
-//	_controlfp(_EM_INVALID | _EM_DENORMAL | _EM_ZERODIVIDE | _EM_OVERFLOW |
-//			 _EM_UNDERFLOW | _EM_INEXACT, _MCW_EM);
-#elif __STDC_VERSION__ >= 199901L
-	feenableexcept(FE_ALL_EXCEPT);
-#endif
-}
 
-/*! \brief Disable floating point exceptions
-
-  \see enableFloatingPointExceptions
+/*! \addtogroup cinterface C Interface
+	@{
 */
-void XsDebugTools_disableFloatingPointExceptions()
+
+/*! \relates XsGloveData
+	\brief Initialize an %XsGloveData object
+*/
+void XsGloveData_construct(struct XsGloveData* thisPtr)
 {
-#ifdef _MSC_VER
-//	_clearfp();
-//	_controlfp(_CW_DEFAULT, ~0);
-#elif __STDC_VERSION__ >= 199901L
-	feclearexcept(FE_ALL_EXCEPT);
-#endif
+	memset(thisPtr, 0, sizeof(XsGloveData));
+	thisPtr->m_snapshotCounter = 0;
+	thisPtr->m_validSampleFlags = 0;
+	thisPtr->m_timestamp = 0;
+	thisPtr->m_carpusOffset = 0;
+	int i;
+	for (i = 0; i < 12; i++)
+		XsFingerData_construct(&thisPtr->m_fingerData[i]);
 }
 
-} // extern "C"
+/*! \relates XsGloveData
+	\brief Destruct an %XsGloveData object
+*/
+void XsGloveData_destruct(struct XsGloveData* thisPtr)
+{
+	(void)thisPtr;
+}
+
+/*! \relates XsFingerData
+\brief Initialize an %XsFingerData object
+*/
+void XsFingerData_construct(struct XsFingerData* thisPtr)
+{
+	XsQuaternion_destruct(&thisPtr->m_orientationIncrement);
+	XsVector3_destruct(&thisPtr->m_velocityIncrement);
+	XsVector3_destruct(&thisPtr->m_mag);
+	thisPtr->m_flags = 0;
+	thisPtr->m_ccAcc = 0;
+	thisPtr->m_ccGyr = 0;
+}
+
+/*! \relates XsFingerData
+\brief Destruct an %XsFingerData object
+*/
+void XsFingerData_destruct(struct XsFingerData* thisPtr)
+{
+	(void)thisPtr;
+}
+
+/*! @} */

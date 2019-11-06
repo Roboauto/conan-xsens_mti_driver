@@ -58,13 +58,13 @@ const XsTimeStamp XsTime_secPerDay = { 60*60*24LL };
 //! The number of milliseconds in a normal day
 const XsTimeStamp XsTime_milliSecPerDay = { 60*60*24*1000LL };
 
-//! The maximum positive value of an Xsens TimeStamp value
+//! The maximum positive value of an XsTimeStamp value
 const XsTimeStamp XsTime_timeStampMax = { 0x7FFFFFFFFFFFFFFFLL };
 
 //////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////// Other  functions ////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////
-#ifdef __APPLE__
+#if 0 // def __APPLE__, it is in fact available on apple, so...
 /*! \brief An implementation of linux' clock_gettime()
 
 	clock_gettime() is not available on Apple/Darwin platforms. This function helps
@@ -155,7 +155,7 @@ uint32_t XsTime_getTimeOfDay(struct tm* date_, time_t* secs_)
 		secs_[0] = tp.tv_sec;
 
 	// 86400 = 24*60*60 = secs in a day, this gives us the seconds since midnight
-	return (1000 * (tp.tv_sec % XsTime_secPerDay.m_msTime)) + (tp.tv_nsec/1000000);
+	return (uint32_t)((1000 * (tp.tv_sec % XsTime_secPerDay.m_msTime)) + (tp.tv_nsec/1000000));
 #endif
 }
 
@@ -220,7 +220,7 @@ void XsTime_getTimeAsString(char* dest, const struct tm* date)
 	else
 		XsTime_getDateTime(&dt);
 
-	snprintf(dest, 9, "%02d%02d%02d%02d", dt.tm_hour, dt.tm_min, dt.tm_sec, 0);
+	snprintf(dest, 8, "%02d%02d%02d%02d", dt.tm_hour, dt.tm_min, dt.tm_sec, 0);
 }
 
 /*! \brief Retrieves the date as wstring representation

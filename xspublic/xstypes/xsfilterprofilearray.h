@@ -30,50 +30,60 @@
 //  ARBITRATORS APPOINTED IN ACCORDANCE WITH SAID RULES.
 //  
 
-#ifndef NMEA_IPARSER_H
-#define NMEA_IPARSER_H
+#ifndef XSFILTERPROFILEARRAY_H
+#define XSFILTERPROFILEARRAY_H
 
-#include "nmea_value.h"
-#include <utility>
+#include "xstypesconfig.h"
+#include "xsarray.h"
 
-namespace nmea
-{
-
-class IParserObserver;
-
-
-class IParser
-{
-public:
-	typedef std::pair<bool, size_t> ParseResult;
-
-	virtual ~IParser() throw() {}
-
-	virtual ParseResult parseMessage(char const * begin, char const * end) const = 0;
-
-	virtual void attachObserver(IParserObserver&) = 0;
-	virtual void detachObserver(IParserObserver&) = 0;
-
-protected:
-	virtual void notifyHCHDM(DoubleValue heading) const = 0;
-	virtual void notifyHCHDG(DoubleValue heading,
-							 DoubleValue deviation, BoolValue positiveDeviation,
-							 DoubleValue variation, BoolValue positiveVariation) const = 0;
-	virtual void notifyPHTRO(DoubleValue pitch, BoolValue bowUp,
-							 DoubleValue roll, BoolValue portUp) const = 0;
-	virtual void notifyPRDID(DoubleValue pitch, DoubleValue roll, DoubleValue heading) const = 0;
-	virtual void notifyPSONCMS(DoubleValue quat1, DoubleValue quat2, DoubleValue quat3, DoubleValue quat4,
-							   DoubleValue acc_x, DoubleValue acc_y, DoubleValue acc_z,
-							   DoubleValue omega_x, DoubleValue omaga_y, DoubleValue omaga_z,
-							   DoubleValue mag_x, DoubleValue mag_y, DoubleValue mag_z,
-							   DoubleValue temperature) const = 0;
-	virtual void notifyHCMTW(DoubleValue temperature) const = 0;
-	virtual void notifyTSS2(DoubleValue heading, DoubleValue heave, DoubleValue roll, DoubleValue pitch) const = 0;
-	virtual void notifyEM1000(DoubleValue roll, DoubleValue pitch, DoubleValue heave, DoubleValue heading) const = 0;
-	virtual void notifyHEHDT(DoubleValue heading) const = 0;
-	virtual void notifyHEROT(DoubleValue rateOfTurn) const = 0;
-};
-}
-
+#ifdef __cplusplus
+#include "xsfilterprofile.h"
+extern "C" {
 #endif
 
+extern XsArrayDescriptor const XSTYPES_DLL_API g_xsFilterProfileArrayDescriptor;
+
+#ifndef __cplusplus
+#define XSFILTERPROFILEARRAY_INITIALIZER	XSARRAY_INITIALIZER(&g_xsFilterProfileArrayDescriptor)
+
+struct XsFilterProfile;
+
+XSARRAY_STRUCT(XsFilterProfileArray, struct XsFilterProfile);
+typedef struct XsFilterProfileArray XsFilterProfileArray;
+
+XSTYPES_DLL_API void XsFilterProfileArray_construct(XsFilterProfileArray* thisPtr, XsSize count, struct XsFilterProfile const* src);
+#else
+} // extern "C"
+#endif
+
+#ifdef __cplusplus
+struct XsFilterProfileArray : public XsArrayImpl<XsFilterProfile, g_xsFilterProfileArrayDescriptor, XsFilterProfileArray> {
+	//! \brief Constructs an XsFilterProfileArray
+	inline explicit XsFilterProfileArray(XsSize sz = 0, XsFilterProfile const* src = 0)
+		 : ArrayImpl(sz, src)
+	{
+	}
+
+	//! \brief Constructs an XsFilterProfileArray as a copy of \a other
+	inline XsFilterProfileArray(XsFilterProfileArray const& other)
+		 : ArrayImpl(other)
+	{
+	}
+
+	//! \brief Constructs an XsFilterProfileArray that references the data supplied in \a ref
+	inline explicit XsFilterProfileArray(XsFilterProfile* ref, XsSize sz, XsDataFlags flags /* = XSDF_None */)
+		: ArrayImpl(ref, sz, flags)
+	{
+	}
+
+#ifndef XSENS_NOITERATOR
+	//! \brief Constructs an XsFilterProfileArray with the array bound by the supplied iterators \a beginIt and \a endIt
+	template <typename Iterator>
+	inline XsFilterProfileArray(Iterator beginIt, Iterator endIt)
+		: ArrayImpl(beginIt, endIt)
+	{
+	}
+#endif
+};
+#endif
+#endif

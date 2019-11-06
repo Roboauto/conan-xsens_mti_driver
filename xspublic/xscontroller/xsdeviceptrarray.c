@@ -85,7 +85,7 @@ XsArrayDescriptor const g_xsDevicePtrArrayDescriptor = {
 	XSEXPCASTRAWCOPY XsArray_rawCopy
 };
 
-/*! \copydoc XsArray_construct
+/*! \copydoc XsArray_constructDerived
 	\note Specialization for XsDevicePtrArray
 */
 void XsDevicePtrArray_construct(XsDevicePtrArray* thisPtr, XsSize count, XsDevicePtr const* src)

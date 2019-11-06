@@ -30,63 +30,30 @@
 //  ARBITRATORS APPOINTED IN ACCORDANCE WITH SAID RULES.
 //  
 
-#ifndef NMEA_VALUE_H
-#define NMEA_VALUE_H
+#ifndef XSCANBAUDCODE_H
+#define XSCANBAUDCODE_H
 
-#include <ostream>
-#include <string.h>
+#include "xstypesconfig.h"
 
-namespace nmea
-{
-
-/*! \class Value
-	\brief A class for a NMEA value
+/*! \brief Internal baud rate configuration codes
 */
-template <typename T>
-class Value
-{
-public:
 
-	/*! \brief Default constructor
-	*/
-	Value() : m_valid(false) {memset(&m_value, 0, sizeof(T));}
-
-	/*! \brief Explicit constructor
-	*/
-	explicit Value(T val) : m_value(val), m_valid(true) {}
-
-	/*! \returns True if value is valid
-	*/
-	bool valid() const {return m_valid;}
-
-	/*! \returns The value object
-	*/
-	T value() const {return m_value;}
-
-	/*! \brief Sets the validity
-		\param validity : The validity
-	*/
-	void setValid(bool validity) {m_valid = validity;}
-
-	/*! \returns The value object
-	*/
-	operator T() const {return m_value;}
-
-	/*! \brief Output stream operator that adds a value to the stream
-		\param out The output stream
-		\param val The value
-		\returns The reference to the output stream
-	*/
-	friend std::ostream& operator << (std::ostream& out, Value const & val) {if (val.valid()) {out << val.value();} return out;}
-
-private:
-	T m_value;
-	bool m_valid;
+enum XSNOCOMEXPORT XsCanBaudCode {
+	// Baudrate codes for SetBaudrate message
+	XCBC_1M			= 0x0C,
+	XCBC_800k		= 0x0B,
+	XCBC_500k		= 0x0A,
+	XCBC_250k		= 0x00,
+	XCBC_125k		= 0x01,
+	XCBC_100k		= 0x02,
+	XCBC_83k3		= 0x03,
+	XCBC_62k5		= 0x04,
+	XCBC_50k		= 0x05,
+	XCBC_33k3		= 0x06,
+	XCBC_20k		= 0x07,
+	XCBC_10k		= 0x08,
+	XCBC_5k			= 0x09,
+	XCBC_Invalid	= 0xFF
 };
 
-typedef Value<double> DoubleValue;
-typedef Value<bool> BoolValue;
-
-}
-
-#endif	// file guard
+#endif

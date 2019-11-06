@@ -35,10 +35,14 @@
 
 #include <xstypes/xsmessage.h>
 #include <xstypes/xsdataidentifier.h>
+#include <xstypes/xscandataidentifier.h>
+#include <xstypes/xscanframeformat.h>
 
 struct XsDeviceId;
 struct XsOutputConfigurationArray;
 struct XsOutputConfiguration;
+struct XsCanOutputConfigurationArray;
+struct XsCanOutputConfiguration;
 
 class MessageSerializer
 {
@@ -47,6 +51,8 @@ public:
 	virtual ~MessageSerializer();
 
 	MessageSerializer &operator<<(XsDataIdentifier value);
+	MessageSerializer &operator<<(XsCanDataIdentifier value);
+	MessageSerializer &operator<<(XsCanFrameFormat value);
 	MessageSerializer &operator<<(const XsDeviceId &id);
 	MessageSerializer &operator<<(uint8_t value);
 	MessageSerializer &operator<<(uint16_t value);
@@ -92,6 +98,9 @@ public:
 	MessageSerializer &operator<<(const XsOutputConfigurationArray &config);
 	MessageSerializer &operator<<(const XsOutputConfiguration &cfg);
 
+	MessageSerializer &operator<<(const XsCanOutputConfigurationArray &config);
+	MessageSerializer &operator<<(const XsCanOutputConfiguration &cfg);
+
 	/*! \returns The current index */
 	inline XsSize index() const { return m_index; }
 
@@ -109,6 +118,8 @@ public:
 	virtual ~MessageDeserializer();
 
 	MessageDeserializer &operator>>(XsDataIdentifier &value);
+	MessageDeserializer &operator>>(XsCanDataIdentifier &value);
+	MessageDeserializer &operator>>(XsCanFrameFormat &value);
 	MessageDeserializer &operator>>(XsDeviceId &id);
 	MessageDeserializer &operator>>(uint8_t &value);
 	MessageDeserializer &operator>>(int8_t &value);
@@ -147,6 +158,9 @@ public:
 
 	MessageDeserializer &operator>>(XsOutputConfigurationArray &config);
 	MessageDeserializer &operator>>(XsOutputConfiguration &cfg);
+
+	MessageDeserializer &operator>>(XsCanOutputConfigurationArray &config);
+	MessageDeserializer &operator>>(XsCanOutputConfiguration &cfg);
 
 	//! \returns The current message
 	const XsMessage& message() { return m_message; }

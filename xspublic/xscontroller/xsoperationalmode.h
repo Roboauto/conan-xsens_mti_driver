@@ -37,7 +37,8 @@ enum XsOperationalMode
 {
 	XOP_Unknown,
 	XOP_LiveStream,
-	XOP_Obr
+	XOP_Obr,
+	XOP_Robr
 };
 
 typedef enum  XsOperationalMode XsOperationalMode;

@@ -30,71 +30,71 @@
 //  ARBITRATORS APPOINTED IN ACCORDANCE WITH SAID RULES.
 //  
 
-#include "xsfilterprofilearray.h"
-#include "xsfilterprofile.h"
-#include <memory.h>
+#include "xscanoutputconfigurationarray.h"
+#include "xscanoutputconfiguration.h"
 
-/*! \struct XsFilterProfileArray
-	\brief A list of XsFilterProfile values
+/*! \struct XsCanOutputConfigurationArray
+	\brief A list of XsCanOutputConfiguration values
 	\sa XsArray
 */
 
 /*! \copydoc XsArrayDescriptor::itemSwap
-	\note Specialization for XsFilterProfile
-*/
-void swapFilterProfile(XsFilterProfile* a, XsFilterProfile* b)
+	\note Specialization for XsCanOutputConfiguration*/
+void swapXsCanOutputConfiguration(XsCanOutputConfiguration* a, XsCanOutputConfiguration* b)
 {
-	XsFilterProfile tmp = *a;
+	XsCanOutputConfiguration tmp = *a;
 	*a = *b;
 	*b = tmp;
 }
 
 /*! \copydoc XsArrayDescriptor::itemCopy
-	\note Specialization for XsFilterProfile
-*/
-void copyFilterProfile(XsFilterProfile* to, XsFilterProfile const* from)
+	\note Specialization for XsCanOutputConfiguration*/
+void copyXsCanOutputConfiguration(XsCanOutputConfiguration* to, XsCanOutputConfiguration const* from)
 {
 	*to = *from;
 }
 
 /*! \copydoc XsArrayDescriptor::itemCompare
-	\note Specialization for XsFilterProfile
-*/
-int compareFilterProfile(XsFilterProfile const* a, XsFilterProfile const* b)
+	\note Specialization for XsCanOutputConfiguration*/
+int compareXsCanOutputConfiguration(XsCanOutputConfiguration const* a, XsCanOutputConfiguration const* b)
 {
-	if (a->m_filterType != b->m_filterType)
-		return (a->m_filterType < b->m_filterType)?-1:1;
-	if (a->m_filterMajor != b->m_filterMajor)
-		return (a->m_filterMajor < b->m_filterMajor)?-1:1;
-	if (a->m_filterMinor != b->m_filterMinor)
-		return (a->m_filterMinor < b->m_filterMinor)?-1:1;
-	if (a->m_version != b->m_version)
-		return (a->m_version < b->m_version)?-1:1;
+	if (a->m_dataIdentifier != b->m_dataIdentifier || a->m_frequency != b->m_frequency || a->m_id != b->m_id || a->m_frameFormat != b->m_frameFormat)
+	{
+		if (a->m_dataIdentifier == b->m_dataIdentifier)
+		{
+			if (a->m_frequency == b->m_frequency)
+			{
+				if (a->m_id == b->m_id)
+				{
+					return (a->m_frameFormat < b->m_frameFormat) ? -1 : 1;
+				}
+				return (a->m_id < b->m_id) ? -1 : 1;
+			}
+			return (a->m_frequency < b->m_frequency) ? -1 : 1;
+		}
+		return (a->m_dataIdentifier < b->m_dataIdentifier) ? -1 : 1;
+	}
+
 	return 0;
 }
 
-//! \brief zero the pointer value
-void zeroFilterProfile(XsFilterProfile* a)
-{
-	memset(a, 0, sizeof(XsFilterProfile));
-}
 
-//! \brief Descriptor for XsFilterProfileArray
-XsArrayDescriptor const g_xsFilterProfileArrayDescriptor = {
-	sizeof(XsFilterProfile),
-	XSEXPCASTITEMSWAP swapFilterProfile,	// swap
-	XSEXPCASTITEMMAKE zeroFilterProfile,	// construct
-	XSEXPCASTITEMCOPY copyFilterProfile,	// copy construct
-	XSEXPCASTITEMMAKE zeroFilterProfile,	// destruct
-	XSEXPCASTITEMCOPY copyFilterProfile,	// copy
-	XSEXPCASTITEMCOMP compareFilterProfile,	// compare
-	XSEXPCASTRAWCOPY XsArray_rawCopy
+//! \brief Descriptor for XsCanOutputConfigurationArray
+XsArrayDescriptor const g_xsCanOutputConfigurationArrayDescriptor = {
+	sizeof(XsCanOutputConfiguration),
+	XSEXPCASTITEMSWAP swapXsCanOutputConfiguration,	// swap
+	0,												// construct
+	XSEXPCASTITEMCOPY copyXsCanOutputConfiguration,	// copy construct
+	0,												// destruct
+	XSEXPCASTITEMCOPY copyXsCanOutputConfiguration,	// copy
+	XSEXPCASTITEMCOMP compareXsCanOutputConfiguration,	// compare
+	XSEXPCASTRAWCOPY XsArray_rawCopy	// raw copy
 };
 
-/*! \copydoc XsArray_construct
-	\note Specialization for XsFilterProfileArray
+/*! \copydoc XsArray_constructDerived
+	\note Specialization for XsCanOutputConfigurationArray
 */
-void XsFilterProfileArray_construct(XsFilterProfileArray* thisPtr, XsSize count, XsFilterProfile const* src)
+void XsCanOutputConfigurationArray_construct(XsCanOutputConfigurationArray* thisPtr, XsSize count, XsCanOutputConfiguration const* src)
 {
-	XsArray_construct(thisPtr, &g_xsFilterProfileArrayDescriptor, count, src);
+	XsArray_construct(thisPtr, &g_xsCanOutputConfigurationArrayDescriptor, count, src);
 }

@@ -30,25 +30,39 @@
 //  ARBITRATORS APPOINTED IN ACCORDANCE WITH SAID RULES.
 //  
 
-#ifndef XSDEVICEIDLIST_H
-#define XSDEVICEIDLIST_H
+#include "xsfilterprofile.h"
+#include "xsstring.h"
+#include <stdio.h>
 
-#include "xsdeviceidarray.h"
+/*! \class XsFilterProfile
+	\brief Contains information about an available filter profile
+*/
+/*! \addtogroup cinterface C Interface
+	@{
+*/
 
-#define XsDeviceIdList XsDeviceIdArray
+/*! \brief Converts filter profile version and type information to string */
+void XsFilterProfile_toString(XsFilterProfile const* thisPtr, XsString *out)
+{
+	char outData[3+1+3+1+1+2*XS_LEN_FILTERPROFILELABEL_TERM];
+	sprintf(outData, "%d.%d %s", thisPtr->m_type, thisPtr->m_version, thisPtr->m_label);
+	XsString_assignCharArray(out, outData);
+}
 
-#ifndef __cplusplus
-// obsolete:
-#define XSDEVICEIDLIST_INITIALIZER		XSDEVICEIDARRAY_INITIALIZER
-#define XsDeviceIdList_construct(thisPtr, sz, src)	XsDeviceIdArray_construct(thisPtr, sz, src)
-#define XsDeviceIdList_assign(thisPtr, sz, src)		XsArray_assign(thisPtr, sz, src)
-#define XsDeviceIdList_destruct(thisPtr)			XsArray_destruct(thisPtr)
-#define XsDeviceIdList_copy(thisPtr, copy)			XsArray_copy(copy, thisPtr)
-#define XsDeviceIdList_append(thisPtr, other)		XsArray_append(thisPtr, other)
-#define XsDeviceIdList_popFront(thisPtr, count)		XsArray_erase(thisPtr, 0, count)
-#define XsDeviceIdList_popBack(thisPtr, count)		XsArray_erase(thisPtr, (XsSize)-1, count)
-#define XsDeviceIdList_swap(a, b)					XsArray_swap(a, b)
-#define XsDeviceIdList_erase(thisPtr, index, count)	XsArray_erase(thisPtr, index, count)
+/*! \brief Checks if the filter profile is empty */
+int XsFilterProfile_empty(XsFilterProfile const* thisPtr)
+{
+	return thisPtr->m_type == 0 && thisPtr->m_label[0] == 0;
+}
 
-#endif
-#endif
+/*! \brief Swap the contents of \a a with \a b
+*/
+void XsFilterProfile_swap(XsFilterProfile* a, XsFilterProfile* b)
+{
+	XsFilterProfile tmp;
+	memcpy(&tmp, a, sizeof(XsFilterProfile));
+	memcpy(a, b, sizeof(XsFilterProfile));
+	memcpy(b, &tmp, sizeof(XsFilterProfile));
+}
+
+/*! @} */

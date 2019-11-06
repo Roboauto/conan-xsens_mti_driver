@@ -30,23 +30,58 @@
 //  ARBITRATORS APPOINTED IN ACCORDANCE WITH SAID RULES.
 //  
 
-#ifndef XSPORTINFOLIST_H
-#define XSPORTINFOLIST_H
+#ifndef XSSTRINGOUTPUTTYPEARRAY_H
+#define XSSTRINGOUTPUTTYPEARRAY_H
 
-#include "xsportinfoarray.h"
+#include "xsstringoutputtype.h"
+#include "xsarray.h"
 
-#define XsPortInfoList XsPortInfoArray
-
-#ifndef __cplusplus
-// obsolete:
-#define XSPORTINFOLIST_INITIALIZER		XSPORTINFOARRAY_INITIALIZER
-#define XsPortInfoList_assign(thisPtr, size, src)		XsArray_assign(thisPtr, sz, src)
-#define XsPortInfoList_construct(thisPtr, size, src)	XsPortInfoArray_construct(thisPtr, size, src)
-#define XsPortInfoList_destruct(thisPtr)				XsArray_destruct(thisPtr)
-#define XsPortInfoList_copy(thisPtr, copy)				XsArray_copy(copy, thisPtr)
-#define XsPortInfoList_append(thisPtr, other)			XsArray_append(thisPtr, other)
-#define XsPortInfoList_erase(thisPtr, index, count)		XsArray_erase(thisPtr, index, count)
-#define XsPortInfoList_swap(a, b)						XsArray_swap(a, b)
+#ifdef __cplusplus
+extern "C" {
 #endif
 
+extern XsArrayDescriptor const XSTYPES_DLL_API g_xsStringOutputTypeArrayDescriptor;
+
+#ifndef __cplusplus
+#define XSSTRINGOUTPUTTYPEARRAY_INITIALIZER	XSARRAY_INITIALIZER(&g_xsStringOutputTypeArrayDescriptor)
+
+XSARRAY_STRUCT(XsStringOutputTypeArray, XsStringOutputType);
+typedef struct XsStringOutputTypeArray XsStringOutputTypeArray;
+
+XSTYPES_DLL_API void XsStringOutputTypeArray_construct(XsStringOutputTypeArray* thisPtr, XsSize count, XsStringOutputType const* src);
+#else
+} // extern "C"
+#endif
+
+#ifdef __cplusplus
+struct XsStringOutputTypeArray : public XsArrayImpl<XsStringOutputType, g_xsStringOutputTypeArrayDescriptor, XsStringOutputTypeArray>
+{
+	//! \brief Constructs an XsStringOutputTypeArray
+	inline explicit XsStringOutputTypeArray(XsSize sz = 0, XsStringOutputType const* src = 0)
+		: ArrayImpl(sz, src)
+	{
+	}
+
+	//! \brief Constructs an XsStringOutputTypeArray as a copy of \a other
+	inline XsStringOutputTypeArray(XsStringOutputTypeArray const& other)
+		: ArrayImpl(other)
+	{
+	}
+
+	//! \brief Constructs an XsStringOutputTypeArray that references the data supplied in \a ref
+	inline explicit XsStringOutputTypeArray(XsStringOutputType* ref, XsSize sz, XsDataFlags flags /* = XSDF_None */)
+		: ArrayImpl(ref, sz, flags)
+	{
+	}
+
+#ifndef XSENS_NOITERATOR
+	//! \brief Constructs an XsStringOutputTypeArray with the array bound by the supplied iterators \a beginIt and \a endIt
+	template <typename Iterator>
+	inline XsStringOutputTypeArray(Iterator beginIt, Iterator endIt)
+		: ArrayImpl(beginIt, endIt)
+	{
+	}
+#endif
+};
+#endif
 #endif

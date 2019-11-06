@@ -74,6 +74,8 @@ XSTYPES_DLL_API int XsString_contains(XsString const * thisPtr, XsString const* 
 XSTYPES_DLL_API int XsString_empty(XsString const * thisPtr);
 XSTYPES_DLL_API void XsString_sort(XsString* thisPtr);
 XSTYPES_DLL_API void XsString_reverse(XsString* thisPtr);
+XSTYPES_DLL_API int XsString_findSubStr(XsString const* thisPtr, XsString const* needle);
+XSTYPES_DLL_API void XsString_mid(XsString* thisPtr, XsString const* source, XsSize start, XsSize count);
 
 #ifndef XSENS_NO_WCHAR
 XSTYPES_DLL_API XsSize XsString_copyToWCharArray(const XsString* thisPtr, wchar_t* dest, XsSize size);
@@ -208,7 +210,7 @@ struct XsString : public XsStringType {
 	}
 
 	//! \brief Constructs an XsInt64Array that references the data supplied in \a ref
-	inline explicit XsString(char* ref, XsSize sz, XsDataFlags flags = XSDF_None)
+	inline explicit XsString(char* ref, XsSize sz, XsDataFlags flags /* = XSDF_None */)
 		: XsStringType(ref, sz+1, flags)
 	{
 	}
@@ -262,8 +264,15 @@ struct XsString : public XsStringType {
 	{
 		static const char nullChar = 0;
 		if (empty())
-			return (char*) &nullChar;
-		return begin().operator ->();
+			return const_cast<char*>(&nullChar);
+		try
+		{
+			return begin().operator ->();
+		}
+		catch(...)
+		{
+			return const_cast<char*>(&nullChar);
+		}
 	}
 
 	//! \brief Return the internal 0-terminated C-style string
@@ -272,7 +281,14 @@ struct XsString : public XsStringType {
 		static const char nullChar = 0;
 		if (empty())
 			return &nullChar;
-		return begin().operator ->();
+		try
+		{
+			return begin().operator ->();
+		}
+		catch(...)
+		{
+			return &nullChar;
+		}
 	}
 
 #ifndef XSENS_NO_STL
@@ -345,7 +361,7 @@ struct XsString : public XsStringType {
 	inline XsString& operator << (int i)
 	{
 		char buffer[32];
-		append(XsString(buffer, (XsSize) std::sprintf(buffer, "%d", i), XSDF_None));
+		append(XsString(buffer, (XsSize) (ptrdiff_t) std::sprintf(buffer, "%d", i), XSDF_None));
 		return *this;
 	}
 
@@ -426,7 +442,7 @@ struct XsString : public XsStringType {
 	*/
 	inline bool endsWith(XsString const& other, bool caseSensitive = false) const
 	{
-		return 0 != XsString_endsWith(this, &other, caseSensitive);
+		return 0 != XsString_endsWith(this, &other, caseSensitive?1:0);
 	}
 
 	/*! \brief Returns whether this string starts with \a other (case-insensitive!)
@@ -436,7 +452,7 @@ struct XsString : public XsStringType {
 	*/
 	inline bool startsWith(XsString const& other, bool caseSensitive = false) const
 	{
-		return 0 != XsString_startsWith(this, &other, caseSensitive);
+		return 0 != XsString_startsWith(this, &other, caseSensitive?1:0);
 	}
 
 	/*! \brief Returns whether this string contains \a other (case-insensitive!)
@@ -447,7 +463,7 @@ struct XsString : public XsStringType {
 	*/
 	inline bool contains(XsString const& other, bool caseSensitive = false, XsSize* offset = 0) const
 	{
-		return 0 != XsString_contains(this, &other, caseSensitive, offset);
+		return 0 != XsString_contains(this, &other, caseSensitive?1:0, offset);
 	}
 
 #ifndef XSENS_NO_WCHAR
@@ -481,6 +497,28 @@ struct XsString : public XsStringType {
 	inline void reverse()
 	{
 		XsString_reverse(this);
+	}
+
+	/*! \brief Find the first occurrence of \a needle in the string
+		\param needle The string to find
+		\return The offset of \a needle or -1 if it was not found
+	*/
+	int findSubStr(XsString const& needle) const
+	{
+		return XsString_findSubStr(this, &needle);
+	}
+
+	/*! \brief Return a substring of the string
+		\details The function returns a copy of up to \a count characters from the string, starting at offset \a start
+		\param start The offset of the first character to copy
+		\param count The maximum number of characters to copy
+		\return The requested substring
+	*/
+	XsString mid(XsSize start, XsSize count) const
+	{
+		XsString rv;
+		XsString_mid(&rv, this, start, count);
+		return rv;
 	}
 };
 

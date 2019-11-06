@@ -30,25 +30,29 @@
 //  ARBITRATORS APPOINTED IN ACCORDANCE WITH SAID RULES.
 //  
 
-#ifndef XSOUTPUTCONFIGURATIONLIST_H
-#define XSOUTPUTCONFIGURATIONLIST_H
+#ifndef XSRESETMETHOD_H
+#define XSRESETMETHOD_H
 
-#include "xsoutputconfigurationarray.h"
-#define XsOutputConfigurationList	XsOutputConfigurationArray
+/*!	\addtogroup enums Global enumerations
+	@{
+*/
 
-#ifndef __cplusplus
-// obsolete:
-#define XSOUTPUTCONFIGURATIONLIST_INITIALIZER	XSOUTPUTCONFIGURATIONARRAY_INITIALIZER
-#define XsOutputConfigurationList_assign(thisPtr, size, src)	XsArray_assign(thisPtr, size, src)
-#define XsOutputConfigurationList_construct(thisPtr, size, src)	XsOutputConfigurationArray_construct(thisPtr, size, src)
-#define XsOutputConfigurationList_destruct(thisPtr)				XsArray_destruct(thisPtr)
-#define XsOutputConfigurationList_copy(thisPtr, copy)			XsArray_copy(copy, thisPtr)
-#define XsOutputConfigurationList_append(thisPtr, other)		XsArray_append(thisPtr, other)
-#define XsOutputConfigurationList_popFront(thisPtr, count)		XsArray_erase(thisPtr, 0, count)
-#define XsOutputConfigurationList_popBack(thisPtr, count)		XsArray_erase(thisPtr, (XsSize)-1, count)
-#define XsOutputConfigurationList_swap(a, b)					XsArray_swap(a, b)
-#define XsOutputConfigurationList_erase(thisPtr, index, count)	XsArray_erase(thisPtr, index, count)
-#define XsOutputConfigurationList_equal(a, b)					XsArray_equal(a, b)
-#endif
+//AUTO namespace xstypes {
+/*! \brief Orientation reset type. */
+enum XsResetMethod {
+	XRM_StoreAlignmentMatrix	= 0,				//!< \brief Store the current object alignment matrix to persistent memory
+	XRM_Heading					= 1,				//!< \brief Reset the heading (yaw)
+	XRM_Object					= 3,				//!< \brief Reset the attitude (roll, pitch), same as XRM_Inclination
+	XRM_Inclination				= XRM_Object,		//!< \brief Reset the inclination (roll, pitch), same as XRM_Object
+	XRM_Alignment				= 4,				//!< \brief Reset heading and attitude \details This effectively combines the XRM_Heading and XRM_Object
+	XRM_Global					= XRM_Alignment,	//!< \brief Reset the full orientation of the device \details Obsolete. Use XRM_Alignment instead.
+	XRM_DefaultHeading			= 5,				//!< \brief Revert to default behaviour for heading, undoes XRM_Heading
+	XRM_DefaultInclination		= 6,				//!< \brief Revert to default behaviour for inclination, undoes XRM_Inclination
+	XRM_DefaultAlignment		= 7,				//!< \brief Revert to default behaviour for heading and inclination, undoes any reset
+	XRM_None										//!< \brief No reset planned
+};
+/*! @} */
+typedef enum XsResetMethod XsResetMethod;
+//AUTO }
 
 #endif

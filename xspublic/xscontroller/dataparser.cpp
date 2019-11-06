@@ -79,29 +79,32 @@ int32_t DataParser::innerFunction()
 	{
 		raw.append(m_incoming.front());
 		m_incoming.pop();
+		lockIncoming.unlock();
+
+		JLTRACEG("raw size: " << raw.size());
+
+		// process data
+		if (!raw.empty() && !isTerminating())
+		{
+			std::deque<XsMessage> msgs;
+			XsResultValue res = processBufferedData(raw, msgs);
+			JLTRACEG("Parse result " << res << ": " << msgs.size() << " messages");
+
+			if (res != XRV_TIMEOUT && res != XRV_TIMEOUTNODATA && !isTerminating())
+			{
+				for (XsMessage const& msg : msgs)
+				{
+					handleMessage(msg);
+					if (isTerminating())
+						break;
+				}
+			}
+			raw.clear();
+		}
+
+		lockIncoming.lock();
 	}
 	m_newDataEvent.reset();
-	lockIncoming.unlock();	// unlock incoming buffer to prevent halting the read thread
-
-	JLTRACEG("raw size: " << raw.size());
-
-	// process data
-	if (!raw.empty() && !isTerminating())
-	{
-		std::deque<XsMessage> msgs;
-		XsResultValue res = processBufferedData(raw, msgs);
-		JLTRACEG("Parse result " << res << ": " << msgs.size() << " messages");
-
-		if (res != XRV_TIMEOUT && res != XRV_TIMEOUTNODATA && !isTerminating())
-		{
-			for (XsMessage const& msg : msgs)
-			{
-				handleMessage(msg);
-				if (isTerminating())
-					break;
-			}
-		}
-	}
 
 	return 1;
 }
@@ -126,13 +129,17 @@ void DataParser::clear()
 		m_incoming.pop();
 }
 
+void DataParser::signalStopThread(void)
+{
+	StandardThread::signalStopThread();
+	m_newDataEvent.terminate();
+}
+
 /*! \brief Terminates the thread
 */
 void DataParser::terminate()
 {
 	JLDEBUGG("Thread " << this << " type: " << m_parserType);
-	signalStopThread();
-	m_newDataEvent.terminate();
 	stopThread();
 	clear();
 }

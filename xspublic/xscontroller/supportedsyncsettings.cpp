@@ -71,6 +71,14 @@ XsSyncSettingArray supportedSyncSettings(XsDeviceId deviceId)
 	{
 		return supportedSyncSettingsForMti7Device();
 	}
+	else if (deviceId.isMti6X0() && deviceId.isGnss())
+	{
+		return supportedSyncSettingsForMti670Device();
+	}
+	else if (deviceId.isMti6X0())
+	{
+		return supportedSyncSettingsForMt6x0Device();
+	}
 	else if (deviceId.isMtiX())
 	{
 		return supportedSyncSettingsForMtiXDevice();
@@ -186,6 +194,7 @@ XsSyncSettingArray supportedSyncSettingsForMtiDevice()
 	s.m_skipFactor	= 0;
 	s.m_offset		= 0;
 	settings.push_back(s);
+
 	// Enable polarity, offset and skip factor for next settings
 	s.m_polarity	= XSP_RisingEdge;
 	s.m_skipFactor	= 1;
@@ -215,6 +224,102 @@ XsSyncSettingArray supportedSyncSettingsForMtiDevice()
 	s.m_clockPeriod = 0;
 	s.m_pulseWidth	= 0;
 	s.m_offset		= 1;
+	settings.push_back(s);
+
+	return settings;
+}
+
+/*! \brief get list of supported synchronizations settings for an Mti6x0Device */
+XsSyncSettingArray supportedSyncSettingsForMt6x0Device()
+{
+	XsSyncSetting s;
+	XsSyncSettingArray settings;
+
+	//enable/disabled parameters per functions
+	s.m_polarity = XSP_RisingEdge;
+	s.m_offset = 0;
+	s.m_skipFactor = 1;
+	s.m_triggerOnce = 1;
+	s.m_skipFirst = 1;
+	s.m_pulseWidth = 0;
+	s.m_clockPeriod = 0;
+
+	s.m_function	= XSF_TriggerIndication;
+	s.m_line		= XSL_In1;
+	settings.push_back(s);
+	s.m_line		= XSL_In2;
+	settings.push_back(s);
+
+	s.m_function	= XSF_SendLatest;
+	s.m_line		= XSL_In1;
+	settings.push_back(s);
+	s.m_line		= XSL_In2;
+	settings.push_back(s);
+
+	//-----
+	s.m_function	= XSF_SendLatest;
+	s.m_line		= XSL_ReqData;
+	// Disable polarity, offset and skip factor for ReqData
+	s.m_polarity	= XSP_None;
+	s.m_skipFactor	= 0;
+	s.m_offset		= 0;
+	s.m_skipFirst	= 0;
+	s.m_triggerOnce = 0;
+	settings.push_back(s);
+
+	// Enable polarity, offset and skip factor for next settings
+	s.m_polarity	= XSP_RisingEdge;
+	s.m_skipFactor	= 1;
+	s.m_offset		= 1;
+	//-----
+
+	s.m_function	= XSF_IntervalTransitionMeasurement;
+	s.m_line		= XSL_Out1;
+	s.m_pulseWidth	= 1;
+	settings.push_back(s);
+	s.m_skipFirst	= 0;
+	s.m_triggerOnce = 0;
+
+	s.m_function	= XSF_ClockBiasEstimation;
+	s.m_offset		= 0;
+	s.m_pulseWidth	= 0;
+	s.m_clockPeriod = 1;
+	s.m_line		= XSL_In1;
+	settings.push_back(s);
+	s.m_line		= XSL_In2;
+	settings.push_back(s);
+
+	s.m_function	= XSF_StartSampling;
+	s.m_skipFactor	= 0;
+	s.m_clockPeriod = 0;
+	s.m_pulseWidth	= 0;
+	s.m_offset		= 1;
+	s.m_skipFirst	= 1;
+	s.m_line		= XSL_In1;
+	settings.push_back(s);
+	s.m_line		= XSL_In2;
+	settings.push_back(s);
+
+	return settings;
+}
+
+/*! \brief get list of supported synchronizations settings for an Mti670Device */
+XsSyncSettingArray supportedSyncSettingsForMti670Device()
+{
+	XsSyncSettingArray settings = supportedSyncSettingsForMt6x0Device();
+
+	XsSyncSetting s;
+
+	// add XSF_Gnss1Pps with gnss clock in setting
+	s.m_function = XSF_Gnss1Pps;
+	s.m_polarity = XSP_None;
+	s.m_offset = 0;
+	s.m_pulseWidth = 1;
+	s.m_clockPeriod = 0;
+	s.m_skipFactor = 0;
+	s.m_line = XSL_In1;
+	settings.push_back(s);
+	s.m_line = XSL_In2;
 	settings.push_back(s);
 
 	return settings;
@@ -369,7 +474,7 @@ XsSyncSettingArray supportedSyncSettingsForMtiXDevice()
 	s.m_clockPeriod = 0;
 
 	s.m_function	= XSF_SendLatest;
-	s.m_line		= xslgmtToXsl(XSLGMT_In);
+	s.m_line		= xslgmtToXsl(XSLGMT_In1);
 	settings.push_back(s);
 
 	//-----

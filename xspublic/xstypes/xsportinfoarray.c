@@ -59,7 +59,7 @@ XsArrayDescriptor const g_xsPortInfoArrayDescriptor = {
 	XSEXPCASTRAWCOPY XsArray_rawCopy	// raw copy
 };
 
-/*! \copydoc XsArray_construct
+/*! \copydoc XsArray_constructDerived
 	\note Specialization for XsPortInfoArray
 */
 void XsPortInfoArray_construct(XsPortInfoArray* thisPtr, XsSize count, XsPortInfo const* src)

@@ -76,7 +76,7 @@ XsArrayDescriptor const g_xsInt64ArrayDescriptor = {
 	XSEXPCASTRAWCOPY XsArray_rawCopy	// raw copy
 };
 
-/*! \copydoc XsArray_construct
+/*! \copydoc XsArray_constructDerived
 	\note Specialization for XsInt64Array
 */
 void XsInt64Array_construct(XsInt64Array* thisPtr, XsSize count, int64_t const* src)

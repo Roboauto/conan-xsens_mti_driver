@@ -52,7 +52,7 @@ const XsReal XsMath_tinyValue = 1.0e-16;
 const XsReal XsMath_hugeValue = 1.0e+16;
 
 #ifdef XSENS_SINGLE_PRECISION
-	//! \brief A value related to the precisson of floating point arithmetic (1.192092895507813e-07)
+	//! \brief A value related to the precision of floating point arithmetic (1.192092895507813e-07)
 	const XsReal XsMath_epsilon = 1.192092895507813e-07;
 	//! \brief Square root of XsMath_epsilon
 	const XsReal XsMath_sqrtEpsilon = 3.452669830012439e-04;
@@ -61,7 +61,7 @@ const XsReal XsMath_hugeValue = 1.0e+16;
 	//! \brief Square root of XsMath_denormalized
 	const XsReal XsMath_sqrtDenormalized = 3.1622776601683793319988935444327e-19;
 #else
-	//! \brief A value related to the precisson of floating point arithmetic (2.2204460492503131e-016)
+	//! \brief A value related to the precision of floating point arithmetic (2.2204460492503131e-016)
 	const XsReal XsMath_epsilon = 2.2204460492503131e-016;
 	//! \brief Square root of XsMath_epsilon
 	const XsReal XsMath_sqrtEpsilon = 1.4901161193847656e-008;
@@ -175,8 +175,9 @@ int XsMath_isFinite(XsReal x)
 	case _FPCLASS_PD:
 	case _FPCLASS_PN:
 		return 1;
+	default:
+		return _finite(x);
 	}
-	return _finite(x);
 #elif __GNUC__
 	return isfinite(x);
 #elif defined(isfinite)
@@ -186,6 +187,26 @@ int XsMath_isFinite(XsReal x)
 #else
 	return 1;
 #endif
+}
+
+/*! \brief Returns \a d integer converted from a single precision floating point value
+*/
+int32_t XsMath_floatToLong(float d)
+{
+	if (d >= 0)
+		return (int32_t) floorf(d+0.5f);
+	else
+		return (int32_t) ceilf(d-0.5f);
+}
+
+/*! \brief Returns \a d integer converted from a single precision floating point value
+*/
+int64_t XsMath_floatToInt64(float d)
+{
+	if (d >= 0)
+		return (int64_t) floorf(d+0.5f);
+	else
+		return (int64_t) ceilf(d-0.5f);
 }
 
 /*! \brief Returns \a d integer converted from a double precision floating point value

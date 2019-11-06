@@ -30,26 +30,26 @@
 //  ARBITRATORS APPOINTED IN ACCORDANCE WITH SAID RULES.
 //  
 
-#define XSNOEXPORT
-#define XSENS_NO_AUTOLIB
-// include this file in Visual Studio using C/C++->Advanced->Force Includes (the /FI option)
-#ifndef CONFIG_H
-#define CONFIG_H
+#ifndef XSCANFRAMEFORMAT_H
+#define XSCANFRAMEFORMAT_H
 
-#ifndef UNICODE
-#define UNICODE
+//////////////////////////////////////////////////////////////////////////////////////////
+/*!	\addtogroup enums Global enumerations
+	@{
+*/
+
+//AUTO namespace xstypes {
+/*!	\enum XsCanFrameFormat
+	\brief Defines the Frame format for CAN messages
+
+*/
+enum XsCanFrameFormat
+{
+	XCFF_11Bit_Identifier	= 0,
+	XCFF_29Bit_Identifier	= 1,
+};
+/*! @} */
+
+typedef enum XsCanFrameFormat XsCanFrameFormat;
+
 #endif
-#ifndef _UNICODE
-#define _UNICODE
-#endif
-
-#include <xstypes/xstypesconfig.h>
-
-//////////////////////////////////////////////////
-// generic preprocessor defines
-
-//! Set to 0 to disable threading support (ie for in an embedded environment), 1 is enabled
-#define JOURNALLER_WITH_THREAD_SUPPORT		1
-
-
-#endif	// CONFIG_H

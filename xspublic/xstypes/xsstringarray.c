@@ -50,7 +50,7 @@ XsArrayDescriptor const g_xsStringArrayDescriptor = {
 	0
 };
 
-/*! \copydoc XsArray_construct
+/*! \copydoc XsArray_constructDerived
 	\note Specialization for XsStringArray
 */
 void XsStringArray_construct(XsStringArray* thisPtr, XsSize count, XsString const* src)

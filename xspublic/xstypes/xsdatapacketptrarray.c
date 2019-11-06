@@ -85,7 +85,7 @@ XsArrayDescriptor const g_xsDataPacketPtrArrayDescriptor = {
 	XSEXPCASTRAWCOPY XsArray_rawCopy
 };
 
-/*! \copydoc XsArray_construct
+/*! \copydoc XsArray_constructDerived
 	\note Specialization for XsDataPacketPtrArray
 */
 void XsDataPacketPtrArray_construct(XsDataPacketPtrArray* thisPtr, XsSize count, XsDataPacketPtr const* src)

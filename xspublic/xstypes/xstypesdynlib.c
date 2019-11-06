@@ -54,8 +54,7 @@
 #endif
 #include "xstypesdynlib.h"
 #include "xstime.h"
-#include "xsversion.h"
-#include "buildversion.h"
+#include "xsstring.h"
 
 #ifdef _MANAGED
 #pragma managed(push, off)
@@ -103,6 +102,8 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 		// in case of process termination, all the threads have already been destroyed and we'll just assume that windows will clean us up
 		if (lpvReserved == NULL)
 			so_fini();
+		break;
+	default:
 		break;
 	}
 	return TRUE;

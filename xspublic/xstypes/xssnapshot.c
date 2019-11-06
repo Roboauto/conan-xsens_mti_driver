@@ -32,24 +32,24 @@
 
 #include "xssnapshot.h"
 
-/*!	\struct XsAwindaSnapshot
-	\brief Container for Awinda Snapshot data.
+/*!	\struct XsSnapshot
+	\brief Container for Snapshot data.
 */
 
 /*! \addtogroup cinterface C Interface
 	@{
 */
 
-/*! \relates XsAwindaSnapshot
-	\brief Construct an %XsAwindaSnapshot object
+/*! \relates XsSnapshot
+	\brief Construct an %XsSnapshot object
 */
 void XsSnapshot_construct(XsSnapshot* thisPtr)
 {
 	memset(thisPtr, 0, sizeof(XsSnapshot));
 }
 
-/*!	\relates XsAwindaSnapshot
-	\brief Destruct an %XsAwindaSnapshot object
+/*!	\relates XsSnapshot
+	\brief Destruct an %XsSnapshot object
 */
 void XsSnapshot_destruct(XsSnapshot* thisPtr)
 {

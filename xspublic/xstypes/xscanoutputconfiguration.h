@@ -30,64 +30,71 @@
 //  ARBITRATORS APPOINTED IN ACCORDANCE WITH SAID RULES.
 //  
 
-#ifndef XSENS_MATH_THROW_H
-#define XSENS_MATH_THROW_H
+#ifndef XSCANOUTPUTCONFIGURATION_H
+#define XSCANOUTPUTCONFIGURATION_H
 
 #include "xstypesconfig.h"
+#include "pstdint.h"
+#include "xscandataidentifier.h"
+#include "xscanframeformat.h"
 
-#ifndef XSENS_NO_EXCEPTIONS
-	#include "xsexception.h"
-#endif
+#define XS_MAX_CANOUTPUTCONFIGURATIONS			(16)
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#ifdef XSENS_NO_EXCEPTIONS
-	// support for exceptions is disabled, just do whatever assert(0) does
-	#ifdef XSENS_DEBUG
-		#include <assert.h>
-		#define XM_THROW(a)			XSENS_FW_ASSERT_FUNC(a, __FILE__, (unsigned) __LINE__)
-		#define XM_THROW_DEFINED	1
-	#else
-		#define XM_THROW(a)			((void) 0)
-		#define XM_THROW_DEFINED	0
-	#endif
-#else
-	#define XM_THROW_DEFINED	1
-	#ifdef XSEXCEPTION_H
-		#ifdef _MSC_VER
-			#define XETHROW(a)	throw XsException(XRV_ERROR, XsString(__FUNCTION__ " ") << XsString(a))
-		#elif defined __GNUC__
-			#define XETHROW(a)	throw XsException(XRV_ERROR, XsString(__PRETTY_FUNCTION__) << " " << XsString(a))
-		#else
-			#define XETHROW(a)	throw XsException(XRV_ERROR, XsString(__func__) << " " << XsString(a))
-		#endif
-	#else
-		#define XETHROW(a)	throw (a)
-	#endif
-
-	#if defined(XSENS_DEBUG) && defined(_WIN32) // && !defined(_WIN64) unclear why this clause was added in xsens_math.h rev 871 by RZA
-		XSTYPES_DLL_API void xsensMathThrowBreakFunc();
-		#define XM_THROW(a) do { xsensMathThrowBreakFunc(); XETHROW(a); } while(0)
-	#else
-		#define XM_THROW(a) do { XETHROW(a); } while(0)
-	#endif
+#ifndef __cplusplus
+#define XSCANOUTPUTCONFIGURATION_INITIALIZER		{ XCDI_None, 0 }
 #endif
 
-	XSTYPES_DLL_API void XsDebugTools_enableFloatingPointExceptions();
-	XSTYPES_DLL_API void XsDebugTools_disableFloatingPointExceptions();
+struct XsCanOutputConfiguration;
+
+XSTYPES_DLL_API void XsCanOutputConfiguration_swap(struct XsCanOutputConfiguration* a, struct XsCanOutputConfiguration* b);
 
 #ifdef __cplusplus
 } // extern "C"
-
-namespace xsens {
-	namespace DebugTools {
-		static inline void enableFloatingPointExceptions() { XsDebugTools_enableFloatingPointExceptions(); }	//!< \copydoc XsDebugTools_enableFloatingPointExceptions
-		static inline void disableFloatingPointExceptions() { XsDebugTools_disableFloatingPointExceptions(); }	//!< \copydoc XsDebugTools_disableFloatingPointExceptions
-	} // namespace DebugTools
-} // namespace xsens
-
 #endif
+
+
+/*! \brief Single data type CAN output configuration
+	\details This structure contains a single data type and the frequency at which it should be produced.
+	If m_frequency is 0xFFFF and the %XsCanOutputConfiguration is used for input, the device will configure
+	itself to its maximum frequency for the data type. If it is 0xFFFF and reported by the device,
+	the data has no maximum frequency, but is sent along with appropriate packets (e.g. packet counter)
+*/
+struct XsCanOutputConfiguration {
+	XsCanFrameFormat m_frameFormat;			//!< The frame format of the CAN message
+	XsCanDataIdentifier m_dataIdentifier;	//!< The data identifier
+	uint32_t m_id;							//!< The 11 or 29 bit ID identifier
+	uint16_t m_frequency;					//!< The frequency
+
+#ifdef __cplusplus
+	//! Constructor, initializes to an empty object
+	XsCanOutputConfiguration()
+		: m_frameFormat(XCFF_11Bit_Identifier)
+		, m_dataIdentifier(XCDI_Invalid)
+		, m_id(0)
+		, m_frequency(0)
+	{}
+
+	//! Constructor, initializes to specified values
+	XsCanOutputConfiguration(XsCanFrameFormat il, XsCanDataIdentifier di, uint32_t id, uint16_t freq)
+		: m_frameFormat(il)
+		, m_dataIdentifier(di)
+		, m_id(id)
+		, m_frequency(freq)
+	{}
+
+	//! Comparison operator
+	bool operator == (const XsCanOutputConfiguration& other) const
+	{
+		return (m_frameFormat == other.m_frameFormat &&
+				m_dataIdentifier == other.m_dataIdentifier &&
+				m_id == other.m_id &&
+				m_frequency == other.m_frequency);
+	}
+#endif
+};
+typedef struct XsCanOutputConfiguration XsCanOutputConfiguration;
 
 #endif

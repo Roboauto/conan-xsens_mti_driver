@@ -38,6 +38,10 @@
 
 //////////////////////////////////////////////////////////////////////////////////////////
 /*! \brief Retrieve a character string corresponding to the given result code.
+	\param result The result code to convert
+	\return A static string describing the result code
+	\note In the Python interface this function is called XsResultValueToString
+	\note In C/C++ do NOT delete the returned char* as it points to static memory.
 */
 const char* XsResultValue_toString(XsResultValue result)
 {
@@ -79,8 +83,10 @@ const char* XsResultValue_toString(XsResultValue result)
 	case XRV_INVALIDFILTERPROFILE:	return "Specified filter profile ID is not available on the device or the user is trying to duplicate an existing filter profile type";
 	case XRV_INVALIDSTOREDSETTINGS:	return "The settings stored in the device's non volatile memory are invalid";
 	case XRV_ACCESSDENIED:			return "Request for control of the device was denied";
+	case XRV_FILEERROR:				return "Failure reading, writing, opening or closing a file";
+	case XRV_OUTPUTCONFIGERROR:		return "Erroneous output configuration, device can not go to measurement";
 
-		// CMT / XDA / XME / etc
+		// XDA / XME / etc
 	case XRV_ERROR:					return "Generic error";
 	case XRV_NOTIMPLEMENTED:		return "Operation not implemented";
 	case XRV_TIMEOUT:				return "Timeout occurred, some data received";
@@ -139,6 +145,7 @@ const char* XsResultValue_toString(XsResultValue result)
 
 	case XRV_MEASUREMENTFAILED:		return "Failed to start measurement";
 	case XRV_STARTRECORDINGFAILED:	return "A device could not start recording";
+	case XRV_STOPRECORDINGFAILED:	return "A device could not stop recording";
 
 	case XRV_RADIO_CHANNEL_IN_USE:	return "Detected another system using the selected radio channel";
 	case XRV_UNEXPECTED_DISCONNECT:	return "Motion tracker disconnected unexpectedly";
@@ -151,10 +158,13 @@ const char* XsResultValue_toString(XsResultValue result)
 	case XRV_RESTORE_COMMUNICATION_FAILED:	return "Restore communication failed";
 	case XRV_RESTORE_COMMUNICATION_STOPPED:	return "Restore communication was stopped";
 
+	case XRV_EXPECTED_CONNECT:		return "The device connected";
+
 	case XRV_SHUTTINGDOWN:			return "The device is shutting down";
 	case XRV_GNSSCONFIGURATIONERROR:return "A configuration item was refused by the GNSS module";
 	case XRV_GNSSCOMMTIMEOUT:		return "The communication with the GNSS module timed out";
 	case XRV_GNSSERROR:				return "Communication between the device and the GNSS module failed";
+	case XRV_DEVICE_NOT_CALIBRATED:	return "The EMTS of the device does not contain calibration data";
 
 	default:						return "!!Undefined Result Value!!";
 	}

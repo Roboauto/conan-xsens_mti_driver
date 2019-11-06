@@ -30,40 +30,54 @@
 //  ARBITRATORS APPOINTED IN ACCORDANCE WITH SAID RULES.
 //  
 
-#include "nmea_common.h"
+#ifndef XSENS_MATH_THROW_H
+#define XSENS_MATH_THROW_H
 
-namespace nmea
+#include <xstypes/xstypesconfig.h>
+
+#ifndef XSENS_NO_EXCEPTIONS
+	#include <xstypes/xsexception.h>
+#endif
+
+#ifdef XSENS_NO_EXCEPTIONS
+	// support for exceptions is disabled, just do whatever assert(0) does
+	#ifdef XSENS_DEBUG
+		#include <assert.h>
+		#define XM_THROW(a)			XSENS_FW_ASSERT_FUNC(a, __FILE__, (unsigned) __LINE__)
+		#define XM_THROW_DEFINED	1
+	#else
+		#define XM_THROW(a)			((void) 0)
+		#define XM_THROW_DEFINED	0
+	#endif
+#else
+	#define XM_THROW_DEFINED	1
+	#ifdef XSEXCEPTION_H
+		#ifdef _MSC_VER
+			#define XETHROW(a)	throw XsException(XRV_ERROR, XsString(__FUNCTION__ " ") << XsString(a))
+		#elif defined __GNUC__
+			#define XETHROW(a)	throw XsException(XRV_ERROR, XsString(__PRETTY_FUNCTION__) << " " << XsString(a))
+		#else
+			#define XETHROW(a)	throw XsException(XRV_ERROR, XsString(__func__) << " " << XsString(a))
+		#endif
+	#else
+		#define XETHROW(a)	throw (a)
+	#endif
+
+	#if defined(XSENS_DEBUG) && defined(_WIN32) // && !defined(_WIN64) unclear why this clause was added in xsens_math.h rev 871 by RZA
+		#define XM_THROW(a) do { xsens::DebugTools::mathThrowBreakFunc(); XETHROW(a); } while(0)
+	#else
+		#define XM_THROW(a) do { XETHROW(a); } while(0)
+	#endif
+#endif
+
+namespace xsens
 {
+	namespace DebugTools
+	{
+		void mathThrowBreakFunc();
+		void enableFloatingPointExceptions();
+		void disableFloatingPointExceptions();
+	} // namespace DebugTools
+} // namespace xsens
 
-const char * const Common::ID_HCHDM = "HCHDM";
-const char * const Common::ID_HCHDG = "HCHDG";
-const char * const Common::ID_PHTRO = "PHTRO";
-const char * const Common::ID_HCMTW = "HCMTW";
-const char * const Common::ID_PRDID = "PRDID";
-const char * const Common::ID_PSONCMS = "PSONCMS";
-const char * const Common::ID_TSS2 = ":";
-const char * const Common::ID_EM1000 = "0x0";
-const char * const Common::ID_HEHDT = "HEHDT";
-const char * const Common::ID_HEROT = "HEROT";
-
-const char Common::PREAMBLE = '$';
-const char Common::PREAMBLE_TSS2 = ':';
-const char Common::PREAMBLE_EM1000 = '\0';
-const char Common::COMMA = ',';
-const char Common::PLUS = '+';
-const char Common::MINUS = '-';
-const char Common::DECIMAL_POINT = '.';
-const char Common::CHECKSUM_MARKER = '*';
-const char Common::CR = '\r';
-const char Common::LF = '\n';
-const char Common::NMEA_TRUE = 'T';
-const char Common::HCHDM_MAGNETIC = 'M';
-const char Common::HCHDG_POSITIVE = 'E';
-const char Common::HCHDG_NEGATIVE = 'W';
-const char Common::PHTRO_BOW_UP = 'M';
-const char Common::PHTRO_BOW_DOWN = 'P';
-const char Common::PHTRO_PORT_UP = 'T';
-const char Common::PHTRO_PORT_DOWN = 'B';
-const char Common::HCMTW_CENTIGRADE = 'C';
-
-}
+#endif

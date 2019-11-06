@@ -36,7 +36,7 @@
 
 #include <xscommon/threading.h>
 #include <xscommon/xprintf.h>
-#include <xstypes/xsens_debugtools.h>
+#include <xscommon/xsens_debugtools.h>
 #include <xscommon/xsens_janitors.h>
 #include <xstypes/xsportinfo.h>
 #include "iointerfacefile.h"
@@ -249,6 +249,7 @@ std::deque<XsMessage> MtbFileCommunicator::readMessagesFromStartOfFile(uint8_t m
 	m_extractedMessages = new std::deque<XsMessage>;
 	JanitorStdFunc0<> resetExtractor([this, ex, exm, oldPos]()
 	{
+		delete this->m_extractedMessages;
 		delete this->m_extractor;
 		this->m_extractor = ex;
 		this->m_extractedMessages = exm;
@@ -309,8 +310,7 @@ public:
 		assert(m_device != 0);
 	}
 
-	/*! \brief Do the calibration and filtering on the XsDataPacket data
-		\details When done, the XsDataPacket is inserted into the supplied IPacketDataCache
+	/*! \brief Check if the file load is complete
 	*/
 	virtual bool exec()
 	{
@@ -343,7 +343,7 @@ private:
 	{
 	public:
 		ReaderThread(Xs4FileTask* task);
-		virtual int32_t innerFunction(void);
+		int32_t innerFunction(void) override;
 		Xs4FileTask* m_task;
 		bool m_done;
 	} m_thread;
@@ -403,18 +403,12 @@ void MtbFileCommunicator::loadLogFile(XsDevice* device)
 XsResultValue MtbFileCommunicator::readLogFile(XsDevice* device)
 {
 	assert(device != 0);
-
 	JLDEBUGG("");
-	//XSEXITLOGC(gJournal);
 
 	XsResultValue res = XRV_OK;
-
-	//bool first = true;
 	XsFilePos prevFilePos = -1;
-	//use filename as id
 	XsString id = logFileName();
 
-	//resetLogFileReadPosition();
 	do
 	{
 		try
@@ -536,7 +530,7 @@ bool MtbFileCommunicator::openLogFile(const XsString &filename)
 
 	XsDeviceConfiguration config;
 	config.readFromMessage(rcv);
-	setMasterDeviceId(config.masterInfo().m_masterDeviceId);
+	setMasterDeviceId(XsDeviceId((char*)config.masterInfo().m_productCode, 0, 0, config.masterInfo().m_masterDeviceId));
 
 	return true;
 }
@@ -640,7 +634,7 @@ XsMessage MtbFileCommunicator::readMessage(uint8_t msgId)
 
 	do
 	{
-		 msg = readNextMessage();
+		msg = readNextMessage();
 	}
 	while (!msg.empty() && msgId != 0 && msg.getMessageId() != msgId);
 
@@ -666,7 +660,7 @@ XsMessage MtbFileCommunicator::readNextMessage()
 			setLastResult(XRV_ENDOFFILE);
 			return XsMessage();
 		}
-		m_extractor->processNewData(raw, *m_extractedMessages);
+		m_extractor->processNewData(masterDevice(), raw, *m_extractedMessages);
 	}
 
 	setLastResult(XRV_OK);

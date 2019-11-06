@@ -70,6 +70,8 @@ XSTYPES_DLL_API void XsTimeStamp_utcToLocalTime(struct XsTimeStamp const* thisPt
 XSTYPES_DLL_API void XsTimeStamp_localToUtcTime(struct XsTimeStamp const* thisPtr, struct XsTimeStamp* utc);
 XSTYPES_DLL_API void XsTimeStamp_utcToLocalTime2(struct XsTimeStamp const* thisPtr, struct XsTimeStamp* local, const struct XsTimeInfo* info);
 XSTYPES_DLL_API void XsTimeStamp_localToUtcTime2(struct XsTimeStamp const* thisPtr, struct XsTimeStamp* utc, const struct XsTimeInfo* info);
+XSTYPES_DLL_API void XsTimeStamp_utcToLocalTime_ms(struct XsTimeStamp const* thisPtr, struct XsTimeStamp* local, int64_t utcOffset);
+XSTYPES_DLL_API void XsTimeStamp_localToUtcTime_ms(struct XsTimeStamp const* thisPtr, struct XsTimeStamp* utc, int64_t utcOffset);
 
 #ifdef __cplusplus
 } // extern "C"
@@ -255,23 +257,23 @@ struct XsTimeStamp {
 		return tmp.msTime();
 	}
 
-	/*! \brief Returns the maximum value of an %XsTimeStamp */
+	/*! \brief Returns the maximum possible value of an %XsTimeStamp */
 	inline static XsTimeStamp maxValue()
 	{
 		return XsTimeStamp(int64_t(9223372036854775807LL));	//INT64_MAX
 	}
 
 	/*! \brief Increment the timestamp by one ms, prefix */
-	XsTimeStamp operator++()
-	{ return XsTimeStamp(++m_msTime); }
+	XsTimeStamp& operator++()
+	{ ++m_msTime; return *this; }
 
 	/*! \brief Increment the timestamp by one ms, postfix */
 	XsTimeStamp operator++(int)
 	{ return XsTimeStamp(m_msTime++); }
 
 	/*! \brief Decrement the timestamp by one ms, prefix */
-	XsTimeStamp operator--()
-	{ return XsTimeStamp(--m_msTime); }
+	XsTimeStamp& operator--()
+	{ --m_msTime; return *this; }
 
 	/*! \brief Decrement the timestamp by one ms, postfix */
 	XsTimeStamp operator--(int)
@@ -318,6 +320,28 @@ struct XsTimeStamp {
 	{
 		XsTimeStamp utc;
 		XsTimeStamp_localToUtcTime2(this, &utc, &info);
+		return utc;
+	}
+
+	/*! \brief Convert the supplied time from (assumed) UTC to local time, using the offset in \a info
+		\param utcOffset The time offset to apply
+		\returns The converted time
+	*/
+	XsTimeStamp utcToLocalTime(int64_t utcOffset) const
+	{
+		XsTimeStamp local;
+		XsTimeStamp_utcToLocalTime_ms(this, &local, utcOffset);
+		return local;
+	}
+
+	/*! \brief Convert the supplied time from (assumed) local time to UTC, using the offset in \a info
+		\param utcOffset The time offset to apply
+		\returns The converted time
+	*/
+	XsTimeStamp localToUtcTime(int64_t utcOffset) const
+	{
+		XsTimeStamp utc;
+		XsTimeStamp_localToUtcTime_ms(this, &utc, utcOffset);
 		return utc;
 	}
 private:

@@ -58,15 +58,10 @@ public:
 	explicit MtiXDevice(MtContainer *master) : MtiBaseDeviceEx(master) {}
 	virtual ~MtiXDevice();
 
-	XsByteArray componentsInformation() const;
+	uint32_t supportedStatusFlags() const override;
 
 protected:
-	virtual void fetchAvailableHardwareScenarios();
-
-	virtual XsSyncLine syncSettingsLine(const uint8_t* buff, XsSize offset) const override;
-	virtual uint8_t syncLine(const XsSyncSetting& setting) const override;
-
-	virtual bool hasIccSupport() const;
+	bool hasIccSupport() const override;
 
 	MtiBaseDevice::BaseFrequencyResult getBaseFrequencyInternal(XsDataIdentifier dataType = XDI_None) const override;
 };

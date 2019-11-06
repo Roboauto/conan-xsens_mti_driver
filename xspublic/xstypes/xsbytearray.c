@@ -38,8 +38,9 @@
 */
 
 /*! \copydoc XsArrayDescriptor::itemSwap
-	\note Specialization for uint8_t*/
-void swapUint8(uint8_t* a, uint8_t* b)
+	\note Specialization for uint8_t
+*/
+static void swapUint8(uint8_t* a, uint8_t* b)
 {
 	uint8_t tmp = *a;
 	*a = *b;
@@ -47,15 +48,17 @@ void swapUint8(uint8_t* a, uint8_t* b)
 }
 
 /*! \copydoc XsArrayDescriptor::itemCopy
-	\note Specialization for uint8_t*/
-void copyUint8(uint8_t* to, uint8_t const* from)
+	\note Specialization for uint8_t
+*/
+static void copyUint8(uint8_t* to, uint8_t const* from)
 {
 	*to = *from;
 }
 
 /*! \copydoc XsArrayDescriptor::itemCompare
-	\note Specialization for uint8_t*/
-int compareUint8(uint8_t const* a, uint8_t const* b)
+	\note Specialization for uint8_t
+*/
+static int compareUint8(uint8_t const* a, uint8_t const* b)
 {
 	if (*a < *b)
 		return -1;
@@ -76,8 +79,9 @@ XsArrayDescriptor const g_xsByteArrayDescriptor = {
 	XSEXPCASTRAWCOPY XsArray_rawCopy	// raw copy
 };
 
-/*! \copydoc XsArray_construct
+/*! \copydoc XsArray_constructDerived
 	\note Specialization for XsByteArray
+	\relates XsByteArray
 */
 void XsByteArray_construct(XsByteArray* thisPtr, XsSize count, uint8_t const* src)
 {

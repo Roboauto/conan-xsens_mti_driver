@@ -30,23 +30,31 @@
 //  ARBITRATORS APPOINTED IN ACCORDANCE WITH SAID RULES.
 //  
 
-#ifndef XSMESSAGELIST_H
-#define XSMESSAGELIST_H
+#include "xscanoutputconfiguration.h"
 
-#include "xsmessagearray.h"
-#define XsMessageList XsMessageArray
+void XsCanOutputConfiguration_swap(struct XsCanOutputConfiguration* a, struct XsCanOutputConfiguration* b)
+{
+	{
+		XsCanDataIdentifier t = a->m_dataIdentifier;
+		a->m_dataIdentifier = b->m_dataIdentifier;
+		b->m_dataIdentifier = t;
+	}
 
-#ifndef __cplusplus
-// obsolete:
-#define XSMESSAGELIST_INITIALIZER XSMESSAGEARRAY_INITIALIZER
-#define XsMessageList_assign(thisPtr, size, src)	XsArray_assign(thisPtr, size, src)
-#define XsMessageList_destruct(thisPtr)				XsArray_destruct(thisPtr)
-#define XsMessageList_copy(thisPtr, copy)			XsArray_copy(copy, thisPtr)
-#define XsMessageList_append(thisPtr, other)		XsArray_append(thisPtr, other)
-#define XsMessageList_popFront(thisPtr, count)		XsArray_erase(thisPtr, 0, count)
-#define XsMessageList_popBack(thisPtr, count)		XsArray_erase(thisPtr, (XsSize) -1, count)
-#define XsMessageList_swap(a, b)					XsArray_swap(a, b)
-#define XsMessageList_erase(thisPtr, index, count)	XsArray_erase(thisPtr, index, count)
-#endif
+	{
+		uint16_t t = a->m_frequency;
+		a->m_frequency = b->m_frequency;
+		b->m_frequency = t;
+	}
 
-#endif
+	{
+		uint32_t t = a->m_id;
+		a->m_id = b->m_id;
+		b->m_id = t;
+	}
+
+	{
+		XsCanFrameFormat t = a->m_frameFormat;
+		a->m_frameFormat = b->m_frameFormat;
+		b->m_frameFormat = t;
+	}
+}

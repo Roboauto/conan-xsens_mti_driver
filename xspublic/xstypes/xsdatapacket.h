@@ -55,6 +55,8 @@
 #include "xsrange.h"
 #include "xstriggerindicationdata.h"
 #include "xssnapshot.h"
+#include "xsglovesnapshot.h"
+#include "xsglovedata.h"
 
 #ifndef XSNOEXPORT
 #define XSNOEXPORT
@@ -75,6 +77,7 @@ typedef struct XsDataPacket XsDataPacket;
 #endif
 
 XSTYPES_DLL_API void XsDataPacket_construct(XsDataPacket* thisPtr);
+XSTYPES_DLL_API void XsDataPacket_copyConstruct(XsDataPacket* thisPtr, XsDataPacket const* src);
 XSTYPES_DLL_API void XsDataPacket_destruct(XsDataPacket* thisPtr);
 XSTYPES_DLL_API void XsDataPacket_clear(XsDataPacket* thisPtr, XsDataIdentifier id);
 XSTYPES_DLL_API void XsDataPacket_copy(XsDataPacket* copy, XsDataPacket const* src);
@@ -138,6 +141,9 @@ XSTYPES_DLL_API XsDataIdentifier XsDataPacket_coordinateSystemOrientation(const 
 XSTYPES_DLL_API XsSdiData* XsDataPacket_sdiData(const XsDataPacket* thisPtr, XsSdiData* returnVal);
 XSTYPES_DLL_API int XsDataPacket_containsSdiData(const XsDataPacket* thisPtr);
 XSTYPES_DLL_API void XsDataPacket_setSdiData(XsDataPacket* thisPtr, const XsSdiData* data);
+XSTYPES_DLL_API XsGloveData* XsDataPacket_gloveData(const XsDataPacket* thisPtr, XsGloveData* returnVal);
+XSTYPES_DLL_API int XsDataPacket_containsGloveData(const XsDataPacket* thisPtr);
+XSTYPES_DLL_API void XsDataPacket_setGloveData(XsDataPacket* thisPtr, const XsGloveData* data);
 XSTYPES_DLL_API XsDeviceId* XsDataPacket_storedDeviceId(const XsDataPacket* thisPtr, XsDeviceId* returnVal);
 XSTYPES_DLL_API int XsDataPacket_containsStoredDeviceId(const XsDataPacket* thisPtr);
 XSTYPES_DLL_API void XsDataPacket_setStoredDeviceId(XsDataPacket* thisPtr, const XsDeviceId* data);
@@ -232,6 +238,10 @@ XSTYPES_DLL_API void XsDataPacket_setFullSnapshot(XsDataPacket* thisPtr, XsSnaps
 XSTYPES_DLL_API XsSnapshot* XsDataPacket_fullSnapshot(const XsDataPacket* thisPtr, XsSnapshot* returnVal);
 XSTYPES_DLL_API int XsDataPacket_containsFullSnapshot(const XsDataPacket* thisPtr);
 
+XSTYPES_DLL_API void XsDataPacket_setGloveSnapshot(XsDataPacket* thisPtr, XsGloveSnapshot const * data, int retransmission);
+XSTYPES_DLL_API XsGloveSnapshot* XsDataPacket_gloveSnapshot(const XsDataPacket* thisPtr, XsGloveSnapshot* returnVal);
+XSTYPES_DLL_API int XsDataPacket_containsGloveSnapshot(const XsDataPacket* thisPtr);
+
 XSTYPES_DLL_API void XsDataPacket_setRawBlob(XsDataPacket* thisPtr, const XsByteArray * data);
 XSTYPES_DLL_API XsByteArray* XsDataPacket_rawBlob(const XsDataPacket* thisPtr, XsByteArray* returnVal);
 XSTYPES_DLL_API int XsDataPacket_containsRawBlob(const XsDataPacket* thisPtr);
@@ -271,8 +281,7 @@ struct XsDataPacket {
 	*/
 	inline XsDataPacket(const XsDataPacket& pack)
 	{
-		XsDataPacket_construct(this);
-		*this = pack;
+		XsDataPacket_copyConstruct(this, &pack);
 	}
 
 	//! \copydoc XsDataPacket_destruct
@@ -286,7 +295,7 @@ struct XsDataPacket {
 		\returns A reference to this %XsDataPacket
 		\sa XsDataPacket_copy
 	*/
-	inline const XsDataPacket& operator = (const XsDataPacket& other)
+	inline XsDataPacket& operator = (const XsDataPacket& other)
 	{
 		if (this != &other)
 			XsDataPacket_copy(this, &other);
@@ -736,6 +745,25 @@ struct XsDataPacket {
 	inline void setSdiData(const XsSdiData& data)
 	{
 		XsDataPacket_setSdiData(this, &data);
+	}
+
+	/*! \brief \copybrief XsDataPacket_sdiData(const XsDataPacket*, XsSdiData*) */
+	inline XsGloveData gloveData(void) const
+	{
+		XsGloveData returnVal;
+		return *XsDataPacket_gloveData(this, &returnVal);
+	}
+
+	/*! \copydoc XsDataPacket_containsSdiData(const XsDataPacket*) */
+	inline bool containsGloveData(void) const
+	{
+		return 0 != XsDataPacket_containsGloveData(this);
+	}
+
+	/*! \copydoc XsDataPacket_setGloveData(XsDataPacket*, const XsGloveData*) */
+	XSNOEXPORT inline void setGloveData(const XsGloveData& data)
+	{
+		XsDataPacket_setGloveData(this, &data);
 	}
 
 	/*! \brief \copybrief XsDataPacket_storedDeviceId(const XsDataPacket*, XsDeviceId*)
@@ -1276,6 +1304,25 @@ struct XsDataPacket {
 		return 0 != XsDataPacket_isAwindaSnapshotARetransmission(this);
 	}
 
+	/*! \brief \copybrief XsDataPacket_gloveSnapshot(const XsDataPacket*, XsGloveSnapshot*) */
+	XSNOEXPORT inline XsGloveSnapshot gloveSnapshot(void) const
+	{
+		XsGloveSnapshot returnVal;
+		return *XsDataPacket_gloveSnapshot(this, &returnVal);
+	}
+
+	/*! \brief \copybrief XsDataPacket_containsGloveSnapshot(const XsDataPacket*) */
+	inline bool containsGloveSnapshot(void) const
+	{
+		return 0 != XsDataPacket_containsGloveSnapshot(this);
+	}
+
+	/*! \copydoc XsDataPacket_setGloveSnapshot(XsDataPacket*, XsGloveSnapshot const *, int) */
+	XSNOEXPORT inline void setGloveSnapshot(XsGloveSnapshot const& data, bool retransmission)
+	{
+		XsDataPacket_setGloveSnapshot(this, &data, retransmission ? 1 : 0);
+	}
+
 	/*! \copydoc XsDataPacket_merge(XsDataPacket*, const XsDataPacket*, int) */
 	inline XsDataPacket& merge(const XsDataPacket& other, bool overwrite = true)
 	{
@@ -1285,7 +1332,7 @@ struct XsDataPacket {
 	/*! \brief Set the time of arrival of the data packet
 		\param t The time of arrival
 	*/
-	inline void setTimeOfArrival(XsTimeStamp t)
+	inline void setTimeOfArrival(const XsTimeStamp& t)
 	{
 		m_toa = t;
 	}
@@ -1299,7 +1346,7 @@ struct XsDataPacket {
 	/*! \brief Set the estimated time of sampling of the data packet
 		\param t The estimated time of sampling
 	*/
-	inline void setEstimatedTimeOfSampling(XsTimeStamp t)
+	inline void setEstimatedTimeOfSampling(const XsTimeStamp& t)
 	{
 		m_etos = t;
 	}

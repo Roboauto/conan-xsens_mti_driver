@@ -73,7 +73,7 @@ XsArrayDescriptor const g_xsSyncSettingArrayDescriptor = {
 	XSEXPCASTRAWCOPY XsArray_rawCopy	// raw copy
 };
 
-/*! \copydoc XsArray_construct
+/*! \copydoc XsArray_constructDerived
 	\note Specialization for XsSyncSettingArray
 */
 void XsSyncSettingArray_construct(XsSyncSettingArray* thisPtr, XsSize count, XsSyncSetting const* src)

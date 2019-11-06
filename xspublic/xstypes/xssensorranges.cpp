@@ -42,14 +42,14 @@ Returns a pointer to the A.
 static const char *findHardwareType(const char *productCode)
 {
 	if (findHardwareManufacturer(productCode) != HMT_MT)
-		return NULL;
+		return nullptr;
 
 	const char *A = strchr(productCode, 'A');
 	if (!A)
-		return NULL;
+		return nullptr;
 	const char *G = strchr(A, 'G');
 	if (!G)
-		return NULL;
+		return nullptr;
 	assert(G - A <= 3);
 	return A;
 }
@@ -58,7 +58,7 @@ static const char *findHardwareType(const char *productCode)
 */
 HardwareManufacturerType findHardwareManufacturerC(const XsString* productCode)
 {
-	if (strstr(productCode->c_str(), "MT") != 0)
+	if (strstr(productCode->c_str(), "MT") != nullptr)
 		return HMT_MT;
 
 	return HMT_None;
@@ -93,6 +93,8 @@ static char gyroscopeRangeField(const char *productCode)
 	if (!hwi)
 		return 0;
 	const char *G = strchr(hwi, 'G');
+	if (!G)
+		return 0;
 	return *(G + 1);
 }
 
@@ -118,7 +120,7 @@ double accelerometerRangeC(const XsString *productCode, int32_t hwVersionMajor)
 			else
 				return 200.0;
 		}
-		default : return 10000.0;
+		default: return 10000.0;
 		}
 
 	default:
@@ -150,7 +152,7 @@ double actualAccelerometerRangeC(const XsString *productCode, int32_t hwVersionM
 			else
 				return 200.0;
 		}
-		default : return 10000.0;
+		default: return 10000.0;
 		}
 
 	default:
@@ -175,7 +177,7 @@ double gyroscopeRangeC(const XsString *productCode)
 		case '5': return  2500.0;
 		case '6': return  1800.0;
 		case '9': return   900.0;
-		default : return 10000.0;
+		default: return 10000.0;
 		}
 
 	default:
@@ -202,7 +204,7 @@ double actualGyroscopeRangeC(const XsString *productCode)
 		case '5': return  2500.0;
 		case '6': return  2000.0;
 		case '9': return  1080.0;
-		default : return 10000.0;
+		default: return 10000.0;
 		}
 
 	default:
