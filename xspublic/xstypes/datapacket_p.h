@@ -912,12 +912,12 @@ namespace XsDataPacket_Private {
 				for (int j = 0; j < 3; ++j)
 				{
 					{
-						auto& tmp = m_data.m_fingers[i].m_iV[j];
+						auto tmp = m_data.m_fingers[i].m_iV[j];
 						m_data.m_fingers[i].m_iV[j] = (uint32_t)swapEndian32(tmp);
 					}
 					{
-						auto& tmp = m_data.m_fingers[i].m_mag[j];
-						tmp = (int16_t)swapEndian16(tmp);
+						auto tmp = m_data.m_fingers[i].m_mag[j];
+						m_data.m_fingers[i].m_mag[j] = (int16_t)swapEndian16(tmp);
 					}
 				}
 				{
